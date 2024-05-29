@@ -1,0 +1,48 @@
+---
+name: 'Terraform CD'
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    # Pattern matched against refs/tags
+    tags:
+      - "*"           # Push events to every tag not containing /
+
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read
+
+env:
+  ROLE_ARN: "arn:aws:iam::493370826424:role/ih-tf-terraform-aws-bookstack-github"
+  AWS_DEFAULT_REGION: "us-west-1"
+
+jobs:
+  publish:
+    name: 'Publish Module'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          role-session-name: github-actions
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      # Prepare Python environment
+      - name: Setup Python Environment
+        run: make bootstrap
+
+      # Publish the module
+      - name: Publish module
+        run: |
+          ih-registry upload
