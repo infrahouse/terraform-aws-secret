@@ -25,6 +25,7 @@ No modules.
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.permission-policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_role.caller_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
+| [aws_secretsmanager_secret_version.secret](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret_version) | data source |
 
 ## Inputs
 
@@ -45,3 +46,4 @@ No modules.
 | <a name="output_secret_arn"></a> [secret\_arn](#output\_secret\_arn) | ARN of the created secret |
 | <a name="output_secret_id"></a> [secret\_id](#output\_secret\_id) | ID of the created secret |
 | <a name="output_secret_name"></a> [secret\_name](#output\_secret\_name) | Name of the created secret |
+| <a name="output_secret_value"></a> [secret\_value](#output\_secret\_value) | The current secret value. If the value isn't set yet, return `null`. |
