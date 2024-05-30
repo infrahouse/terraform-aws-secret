@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 env:
-  ROLE_ARN: "arn:aws:iam::493370826424:role/ih-tf-terraform-aws-bookstack-github"
+  ROLE_ARN: "arn:aws:iam::493370826424:role/ih-tf-terraform-aws-secret-github"
   AWS_DEFAULT_REGION: "us-west-1"
 
 jobs:
