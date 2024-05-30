@@ -43,4 +43,5 @@ No modules.
 | Name | Description |
 |------|-------------|
 | <a name="output_secret_arn"></a> [secret\_arn](#output\_secret\_arn) | ARN of the created secret |
+| <a name="output_secret_id"></a> [secret\_id](#output\_secret\_id) | ID of the created secret |
 | <a name="output_secret_name"></a> [secret\_name](#output\_secret\_name) | Name of the created secret |
