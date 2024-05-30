@@ -15,6 +15,6 @@ output "secret_id" {
 
 output "secret_value" {
   description = "The current secret value. If the value isn't set yet, return `null`."
-  value       = length(data.aws_secretsmanager_secret_version.secret) > 0 ? data.aws_secretsmanager_secret_version.secret[0].secret_string : null
+  value       = data.external.secret_value.result["SECRET_VALUE"]
   sensitive   = true
 }
