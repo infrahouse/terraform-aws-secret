@@ -4,15 +4,13 @@ data "aws_iam_policy_document" "permission-policy" {
       identifiers = concat(var.admins == null ? [] : var.admins, [data.aws_iam_role.caller_role.arn])
       type        = "AWS"
     }
-    actions = [
-      "secretsmanager:*"
-    ]
+    actions = local.all_actions
     resources = [
       "*"
     ]
   }
 
-
+  ## Writers
   dynamic "statement" {
     for_each = var.writers != null ? [{}] : []
     content {
@@ -20,12 +18,45 @@ data "aws_iam_policy_document" "permission-policy" {
         identifiers = var.writers
         type        = "AWS"
       }
-      actions = [
-        "secretsmanager:PutSecretValue",
-        "secretsmanager:RotateSecret",
-        "secretsmanager:CancelRotateSecret",
-
+      actions = concat(
+        local.list_actions,
+        local.read_actions,
+        local.write_actions
+      )
+      resources = [
+        "*"
       ]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.writers != null ? [{}] : []
+    content {
+      effect = "Deny"
+      principals {
+        identifiers = var.writers
+        type        = "AWS"
+      }
+      actions = concat(
+        local.admin_actions,
+        local.permission_management_actions,
+        local.tagging_actions
+      )
+      resources = [
+        "*"
+      ]
+    }
+  }
+
+  ## Readers
+  dynamic "statement" {
+    for_each = var.readers != null ? [{}] : []
+    content {
+      principals {
+        identifiers = var.readers
+        type        = "AWS"
+      }
+      actions = local.read_actions
       resources = [
         "*"
       ]
@@ -35,28 +66,32 @@ data "aws_iam_policy_document" "permission-policy" {
   dynamic "statement" {
     for_each = var.readers != null ? [{}] : []
     content {
+      effect = "Deny"
       principals {
         identifiers = var.readers
         type        = "AWS"
       }
-      actions = [
-        "secretsmanager:GetSecretValue",
-      ]
+      actions = concat(
+        local.list_actions,
+        local.admin_actions,
+        local.write_actions,
+        local.permission_management_actions,
+        local.tagging_actions
+      )
       resources = [
         "*"
       ]
     }
   }
 
+  ## The rest
   statement {
     effect = "Deny"
     principals {
       type        = "AWS"
       identifiers = ["*"]
     }
-    actions = [
-      "secretsmanager:*"
-    ]
+    actions = local.all_actions
     resources = [
       "*"
     ]

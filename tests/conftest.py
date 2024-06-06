@@ -73,6 +73,24 @@ def autoscaling_client(boto3_session):
 
 
 @pytest.fixture()
+def secretsmanager_client(boto3_session):
+    assert boto3_session.client("sts").get_caller_identity()["Account"] == TEST_ACCOUNT
+    return boto3_session.client("secretsmanager", region_name=REGION)
+
+
+def get_secretsmanager_client_by_role(role_name):
+    response = boto3.client("sts").assume_role(
+        RoleArn=role_name, RoleSessionName=TEST_ROLE_ARN.split("/")[1]
+    )
+    # noinspection PyUnresolvedReferences
+    return boto3.Session(
+        aws_access_key_id=response["Credentials"]["AccessKeyId"],
+        aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
+        aws_session_token=response["Credentials"]["SessionToken"],
+    ).client("secretsmanager", region_name=REGION)
+
+
+@pytest.fixture()
 def service_network(boto3_session):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "service-network")
     # Create service network
@@ -105,6 +123,29 @@ def ses(boto3_session):
                 role_arn = "{TEST_ROLE_ARN}"
                 test_zone = "{TEST_ZONE}"
                 region = "{REGION}"
+                """
+            )
+        )
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=DESTROY_AFTER,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        yield tf_output
+
+
+@pytest.fixture()
+def probe_role(boto3_session):
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "probe_role")
+    # Create service network
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                role_arn     = "{TEST_ROLE_ARN}"
+                region       = "{REGION}"
+                trusted_arns = ["arn:aws:iam::990466748045:user/aleks"]
                 """
             )
         )
