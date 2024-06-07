@@ -190,3 +190,125 @@ def test_module_writes(probe_role, secretsmanager_client):
             sm_client.delete_secret(SecretId="foo", ForceDeleteWithoutRecovery=True)
         assert err.type is ClientError
         assert err.value.response["Error"]["Code"] == "AccessDeniedException"
+
+
+def test_module_secret_value(probe_role):
+    probe_role_arn = probe_role["role_arn"]["value"]
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                region = "{REGION}"
+                role_arn = "{TEST_ROLE_ARN}"
+                admins = [
+                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
+                ]
+
+                writers = [
+                    "{probe_role_arn}"
+                ]
+                secret_value = "generate"
+                """
+            )
+        )
+
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=DESTROY_AFTER,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+
+        secret_value_0 = tf_output["secret_value"]["value"]
+        sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+        # Can read
+        assert (
+            sm_client.get_secret_value(
+                SecretId="foo",
+            )["SecretString"]
+            == secret_value_0
+        )
+
+        # Overwrite the secret and make sure Terraform reverts the secret
+        sm_client.put_secret_value(
+            SecretId="foo",
+            SecretString="barbar",
+        )
+
+        with terraform_apply(
+            terraform_module_dir,
+            destroy_after=DESTROY_AFTER,
+            json_output=True,
+            enable_trace=TRACE_TERRAFORM,
+        ):
+            sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+            assert (
+                sm_client.get_secret_value(
+                    SecretId="foo",
+                )["SecretString"]
+                == secret_value_0
+            )
+
+
+def test_module_external_value(probe_role):
+    """
+    Create a secret, set the value outside of Terraform
+    """
+    probe_role_arn = probe_role["role_arn"]["value"]
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                region = "{REGION}"
+                role_arn = "{TEST_ROLE_ARN}"
+                admins = [
+                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
+                ]
+
+                writers = [
+                    "{probe_role_arn}"
+                ]
+                secret_value = null
+                """
+            )
+        )
+
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=DESTROY_AFTER,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+
+        # secret_value_0 = tf_output["secret_value"]["value"]
+        sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+        assert (
+            sm_client.get_secret_value(
+                SecretId="foo",
+            )["SecretString"]
+            == "NoValue"
+        )
+
+        # Overwrite the secret and make sure Terraform reverts the secret
+        sm_client.put_secret_value(
+            SecretId="foo",
+            SecretString="barbar",
+        )
+
+        with terraform_apply(
+            terraform_module_dir,
+            destroy_after=DESTROY_AFTER,
+            json_output=True,
+            enable_trace=TRACE_TERRAFORM,
+        ):
+            sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+            assert (
+                sm_client.get_secret_value(
+                    SecretId="foo",
+                )["SecretString"]
+                == "barbar"
+            )
