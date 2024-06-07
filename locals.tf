@@ -34,12 +34,5 @@ locals {
     "secretsmanager:TagResource",
     "secretsmanager:UntagResource",
   ]
-  all_actions = concat(
-    local.list_actions,
-    local.admin_actions,
-    local.read_actions,
-    local.write_actions,
-    local.permission_management_actions,
-    local.tagging_actions
-  )
+  all_actions = ["*"]
 }
