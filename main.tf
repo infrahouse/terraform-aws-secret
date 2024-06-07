@@ -10,7 +10,9 @@ resource "aws_secretsmanager_secret" "secret" {
 }
 
 resource "aws_secretsmanager_secret_version" "current" {
-  count         = var.secret_value == null ? 0 : 1
   secret_id     = aws_secretsmanager_secret.secret.id
-  secret_string = var.secret_value
+  secret_string = var.secret_value == null ? "NoValue" : var.secret_value
+  version_stages = [
+    var.secret_value == null ? "INITIAL" : "AWSCURRENT"
+  ]
 }
