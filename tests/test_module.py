@@ -312,3 +312,72 @@ def test_module_external_value(probe_role):
                 )["SecretString"]
                 == "barbar"
             )
+
+
+def test_module_name_prefix():
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                region = "{REGION}"
+                role_arn = "{TEST_ROLE_ARN}"
+                secret_name = null
+                secret_name_prefix = "some_secret"
+
+                admins = [
+                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
+                ]
+                """
+            )
+        )
+
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=DESTROY_AFTER,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+        assert tf_output["secret_name"]["value"].startswith("some_secret")
+
+
+def test_module_tags(secretsmanager_client):
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                region = "{REGION}"
+                role_arn = "{TEST_ROLE_ARN}"
+                tags = {{
+                    tag1: "value1"
+                }}
+                """
+            )
+        )
+
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=DESTROY_AFTER,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+        response = secretsmanager_client.describe_secret(
+            SecretId=tf_output["secret_arn"]["value"]
+        )
+        assert response["Tags"] == [
+            {
+                "Key": "owner",
+                "Value": TEST_ROLE_ARN,
+            },
+            {
+                "Key": "tag1",
+                "Value": "value1",
+            },
+            {
+                "Key": "created_by",
+                "Value": "infrahouse/terraform-aws-secret",
+            },
+        ]

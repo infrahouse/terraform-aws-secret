@@ -23,8 +23,15 @@ variable "writers" {
 }
 
 variable "secret_name" {
-  description = "Name of the secret in AWS Secretsmanager."
+  description = "Name of the secret in AWS Secretsmanager. Either secret_name or secret_name_prefix must be set."
   type        = string
+  default     = null
+}
+
+variable "secret_name_prefix" {
+  description = "Name prefix of the secret in AWS Secretsmanager. Either secret_name or secret_name_prefix must be set."
+  type        = string
+  default     = null
 }
 
 variable "secret_description" {
@@ -36,4 +43,10 @@ variable "secret_value" {
   description = "Optional value of the secret."
   type        = string
   default     = null
+}
+
+variable "tags" {
+  description = "Tags to apply to secret and other resources the module creates."
+  type        = map(string)
+  default     = {}
 }

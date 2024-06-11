@@ -37,8 +37,10 @@ No modules.
 | <a name="input_owner"></a> [owner](#input\_owner) | A tag owner with this value will be placed on a secret. | `string` | `null` | no |
 | <a name="input_readers"></a> [readers](#input\_readers) | List of role ARNs that will have read permissions of the secret. | `list(string)` | `null` | no |
 | <a name="input_secret_description"></a> [secret\_description](#input\_secret\_description) | The secret description in AWS Secretsmanager. | `string` | n/a | yes |
-| <a name="input_secret_name"></a> [secret\_name](#input\_secret\_name) | Name of the secret in AWS Secretsmanager. | `string` | n/a | yes |
+| <a name="input_secret_name"></a> [secret\_name](#input\_secret\_name) | Name of the secret in AWS Secretsmanager. Either secret\_name or secret\_name\_prefix must be set. | `string` | `null` | no |
+| <a name="input_secret_name_prefix"></a> [secret\_name\_prefix](#input\_secret\_name\_prefix) | Name prefix of the secret in AWS Secretsmanager. Either secret\_name or secret\_name\_prefix must be set. | `string` | `null` | no |
 | <a name="input_secret_value"></a> [secret\_value](#input\_secret\_value) | Optional value of the secret. | `string` | `null` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to secret and other resources the module creates. | `map(string)` | `{}` | no |
 | <a name="input_writers"></a> [writers](#input\_writers) | List of role ARNs that will have write permissions of the secret. | `list(string)` | `null` | no |
 
 ## Outputs
