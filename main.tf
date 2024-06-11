@@ -2,11 +2,15 @@
 resource "aws_secretsmanager_secret" "secret" {
   description             = var.secret_description
   name                    = var.secret_name
+  name_prefix             = var.secret_name_prefix
   recovery_window_in_days = 0
   policy                  = data.aws_iam_policy_document.permission-policy.json
-  tags = {
-    owner : var.owner == null ? data.aws_iam_role.caller_role.arn : var.owner
-  }
+  tags = merge(
+    {
+      owner : var.owner == null ? data.aws_iam_role.caller_role.arn : var.owner
+    },
+    var.tags
+  )
 }
 
 resource "aws_secretsmanager_secret_version" "current" {
