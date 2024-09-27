@@ -9,7 +9,8 @@ resource "aws_secretsmanager_secret" "secret" {
     {
       owner : var.owner == null ? data.aws_iam_role.caller_role.arn : var.owner
     },
-    var.tags
+    var.tags,
+    local.default_module_tags,
   )
 }
 

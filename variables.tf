@@ -45,6 +45,18 @@ variable "secret_value" {
   default     = null
 }
 
+variable "environment" {
+  description = "Name of environment."
+  type        = string
+  default     = "development"
+}
+
+variable "service_name" {
+  description = "Descriptive name of a service that will use this secret."
+  type        = string
+  default     = "unknown"
+}
+
 variable "tags" {
   description = "Tags to apply to secret and other resources the module creates."
   type        = map(string)
