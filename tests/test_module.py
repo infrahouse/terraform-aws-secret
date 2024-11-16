@@ -9,42 +9,14 @@ from infrahouse_toolkit.terraform import terraform_apply
 from tests.conftest import (
     LOG,
     TRACE_TERRAFORM,
-    DESTROY_AFTER,
-    TEST_ZONE,
-    TEST_ROLE_ARN,
     REGION,
     TERRAFORM_ROOT_DIR,
     get_secretsmanager_client_by_role,
 )
 
 
-def test_module(probe_role):
-    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
-    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
-                region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
-
-                admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
-                    "{probe_role["role_arn"]["value"]}"
-                ]
-                """
-            )
-        )
-
-    with terraform_apply(
-        terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
-        json_output=True,
-        enable_trace=TRACE_TERRAFORM,
-    ) as tf_output:
-        LOG.info("%s", json.dumps(tf_output, indent=4))
-
-
-def test_module_no_access(probe_role, secretsmanager_client):
+@pytest.mark.parametrize("probe_role_suffix", ["", "*"])
+def test_module(probe_role, keep_after, test_role_arn, probe_role_suffix):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
@@ -52,11 +24,11 @@ def test_module_no_access(probe_role, secretsmanager_client):
             dedent(
                 f"""
                 region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
+                role_arn = "{test_role_arn}"
 
                 admins = [
                     "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
-                    "{TEST_ROLE_ARN}"
+                    "{probe_role_arn}{probe_role_suffix}"
                 ]
                 """
             )
@@ -64,12 +36,39 @@ def test_module_no_access(probe_role, secretsmanager_client):
 
     with terraform_apply(
         terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
+        destroy_after=not keep_after,
         json_output=True,
         enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
-        sm_client = get_secretsmanager_client_by_role(probe_role["role_arn"]["value"])
+
+
+def test_module_no_access(probe_role, secretsmanager_client, keep_after, test_role_arn):
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
+    probe_role_arn = probe_role["role_arn"]["value"]
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                region = "{REGION}"
+                role_arn = "{test_role_arn}"
+
+                admins = [
+                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
+                    "{test_role_arn}"
+                ]
+                """
+            )
+        )
+
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=not keep_after,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+        sm_client = get_secretsmanager_client_by_role(probe_role_arn)
         with pytest.raises(ClientError) as err:
             sm_client.get_secret_value(
                 SecretId="foo",
@@ -88,7 +87,10 @@ def test_module_no_access(probe_role, secretsmanager_client):
         assert err.value.response["Error"]["Code"] == "AccessDeniedException"
 
 
-def test_module_reads(probe_role, secretsmanager_client):
+@pytest.mark.parametrize("probe_role_suffix", ["", "*"])
+def test_module_reads(
+    probe_role, secretsmanager_client, keep_after, test_role_arn, probe_role_suffix
+):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
@@ -96,14 +98,14 @@ def test_module_reads(probe_role, secretsmanager_client):
             dedent(
                 f"""
                 region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
+                role_arn = "{test_role_arn}"
 
                 admins = [
                     "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
-                    "{TEST_ROLE_ARN}"
+                    "{test_role_arn}"
                 ]
                 readers = [
-                    "{probe_role_arn}"
+                    "{probe_role_arn}{probe_role_suffix}"
                 ]
                 """
             )
@@ -111,7 +113,7 @@ def test_module_reads(probe_role, secretsmanager_client):
 
     with terraform_apply(
         terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
+        destroy_after=not keep_after,
         json_output=True,
         enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
@@ -135,7 +137,10 @@ def test_module_reads(probe_role, secretsmanager_client):
         assert err.value.response["Error"]["Code"] == "AccessDeniedException"
 
 
-def test_module_writes(probe_role, secretsmanager_client):
+@pytest.mark.parametrize("probe_role_suffix", ["", "*"])
+def test_module_writes(
+    probe_role, secretsmanager_client, keep_after, test_role_arn, probe_role_suffix
+):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
@@ -143,14 +148,14 @@ def test_module_writes(probe_role, secretsmanager_client):
             dedent(
                 f"""
                 region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
+                role_arn = "{test_role_arn}"
 
                 admins = [
                     "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
-                    "{TEST_ROLE_ARN}"
+                    "{test_role_arn}"
                 ]
                 writers = [
-                    "{probe_role_arn}"
+                    "{probe_role_arn}{probe_role_suffix}"
                 ]
                 """
             )
@@ -158,7 +163,7 @@ def test_module_writes(probe_role, secretsmanager_client):
 
     with terraform_apply(
         terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
+        destroy_after=not keep_after,
         json_output=True,
         enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
@@ -192,7 +197,7 @@ def test_module_writes(probe_role, secretsmanager_client):
         assert err.value.response["Error"]["Code"] == "AccessDeniedException"
 
 
-def test_module_secret_value(probe_role):
+def test_module_secret_value(probe_role, keep_after, test_role_arn):
     probe_role_arn = probe_role["role_arn"]["value"]
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
@@ -200,7 +205,7 @@ def test_module_secret_value(probe_role):
             dedent(
                 f"""
                 region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
+                role_arn = "{test_role_arn}"
                 admins = [
                     "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
                 ]
@@ -215,7 +220,7 @@ def test_module_secret_value(probe_role):
 
     with terraform_apply(
         terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
+        destroy_after=not keep_after,
         json_output=True,
         enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
@@ -239,7 +244,7 @@ def test_module_secret_value(probe_role):
 
         with terraform_apply(
             terraform_module_dir,
-            destroy_after=DESTROY_AFTER,
+            destroy_after=not keep_after,
             json_output=True,
             enable_trace=TRACE_TERRAFORM,
         ):
@@ -252,7 +257,7 @@ def test_module_secret_value(probe_role):
             )
 
 
-def test_module_external_value(probe_role):
+def test_module_external_value(probe_role, keep_after, test_role_arn):
     """
     Create a secret, set the value outside of Terraform
     """
@@ -263,7 +268,7 @@ def test_module_external_value(probe_role):
             dedent(
                 f"""
                 region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
+                role_arn = "{test_role_arn}"
                 admins = [
                     "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
                 ]
@@ -275,10 +280,19 @@ def test_module_external_value(probe_role):
                 """
             )
         )
-
+    # Ensure destroy
     with terraform_apply(
         terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
+        destroy_after=True,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+
+    # The test itself
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=not keep_after,
         json_output=True,
         enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
@@ -301,7 +315,7 @@ def test_module_external_value(probe_role):
 
         with terraform_apply(
             terraform_module_dir,
-            destroy_after=DESTROY_AFTER,
+            destroy_after=not keep_after,
             json_output=True,
             enable_trace=TRACE_TERRAFORM,
         ):
@@ -314,14 +328,14 @@ def test_module_external_value(probe_role):
             )
 
 
-def test_module_name_prefix():
+def test_module_name_prefix(keep_after, test_role_arn):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
         fp.write(
             dedent(
                 f"""
                 region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
+                role_arn = "{test_role_arn}"
                 secret_name = null
                 secret_name_prefix = "some_secret"
 
@@ -334,7 +348,7 @@ def test_module_name_prefix():
 
     with terraform_apply(
         terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
+        destroy_after=not keep_after,
         json_output=True,
         enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
@@ -342,14 +356,14 @@ def test_module_name_prefix():
         assert tf_output["secret_name"]["value"].startswith("some_secret")
 
 
-def test_module_tags(secretsmanager_client):
+def test_module_tags(secretsmanager_client, keep_after, test_role_arn):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
         fp.write(
             dedent(
                 f"""
                 region = "{REGION}"
-                role_arn = "{TEST_ROLE_ARN}"
+                role_arn = "{test_role_arn}"
                 tags = {{
                     tag1: "value1"
                 }}
@@ -359,7 +373,7 @@ def test_module_tags(secretsmanager_client):
 
     with terraform_apply(
         terraform_module_dir,
-        destroy_after=DESTROY_AFTER,
+        destroy_after=not keep_after,
         json_output=True,
         enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
@@ -370,14 +384,30 @@ def test_module_tags(secretsmanager_client):
         assert response["Tags"] == [
             {
                 "Key": "owner",
-                "Value": TEST_ROLE_ARN,
+                "Value": test_role_arn,
             },
             {
                 "Key": "tag1",
                 "Value": "value1",
             },
             {
+                "Key": "environment",
+                "Value": "development",
+            },
+            {
+                "Key": "created_by_module",
+                "Value": "infrahouse/secret/aws",
+            },
+            {
+                "Key": "service",
+                "Value": "unknown",
+            },
+            {
                 "Key": "created_by",
                 "Value": "infrahouse/terraform-aws-secret",
+            },
+            {
+                "Key": "account",
+                "Value": "303467602807",
             },
         ]

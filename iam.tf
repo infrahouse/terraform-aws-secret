@@ -1,8 +1,13 @@
 data "aws_iam_policy_document" "permission-policy" {
   statement {
     principals {
-      identifiers = concat(var.admins == null ? [] : var.admins, [data.aws_iam_role.caller_role.arn])
+      identifiers = ["*"]
       type        = "AWS"
+    }
+    condition {
+      test     = "ArnLike"
+      values   = concat(var.admins == null ? [] : var.admins, [data.aws_iam_role.caller_role.arn])
+      variable = "aws:PrincipalArn"
     }
     actions = local.all_actions
     resources = [
@@ -15,8 +20,13 @@ data "aws_iam_policy_document" "permission-policy" {
     for_each = var.writers != null ? [{}] : []
     content {
       principals {
-        identifiers = var.writers
+        identifiers = ["*"]
         type        = "AWS"
+      }
+      condition {
+        test     = "ArnLike"
+        values   = var.writers
+        variable = "aws:PrincipalArn"
       }
       actions = concat(
         local.list_actions,
@@ -34,8 +44,13 @@ data "aws_iam_policy_document" "permission-policy" {
     content {
       effect = "Deny"
       principals {
-        identifiers = var.writers
+        identifiers = ["*"]
         type        = "AWS"
+      }
+      condition {
+        test     = "ArnLike"
+        values   = var.writers
+        variable = "aws:PrincipalArn"
       }
       actions = concat(
         local.admin_actions,
@@ -53,8 +68,13 @@ data "aws_iam_policy_document" "permission-policy" {
     for_each = var.readers != null ? [{}] : []
     content {
       principals {
-        identifiers = var.readers
+        identifiers = ["*"]
         type        = "AWS"
+      }
+      condition {
+        test     = "ArnLike"
+        values   = var.readers
+        variable = "aws:PrincipalArn"
       }
       actions = local.read_actions
       resources = [
@@ -68,8 +88,13 @@ data "aws_iam_policy_document" "permission-policy" {
     content {
       effect = "Deny"
       principals {
-        identifiers = var.readers
+        identifiers = ["*"]
         type        = "AWS"
+      }
+      condition {
+        test     = "ArnLike"
+        values   = var.readers
+        variable = "aws:PrincipalArn"
       }
       actions = concat(
         local.list_actions,
@@ -96,7 +121,7 @@ data "aws_iam_policy_document" "permission-policy" {
       "*"
     ]
     condition {
-      test = "StringNotLike"
+      test = "ArnNotLike"
       values = concat(
         [data.aws_iam_role.caller_role.arn],
         var.admins == null ? [] : var.admins,
