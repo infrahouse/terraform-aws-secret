@@ -25,7 +25,6 @@ install-hooks:  ## Install repo hooks
 .PHONY: test
 test:  ## Run tests on the module
 	rm -f test_data/test_module/.terraform.lock.hcl
-	#rm -rf test_data/test_module/.terraform
 	pytest -xvvs tests/
 
 
@@ -65,3 +64,9 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
+
+.PHONY: lint
+lint:  ## Lint the module
+	@echo "Check code style"
+	black --check tests
+	terraform fmt -check

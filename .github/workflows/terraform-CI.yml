@@ -1,0 +1,54 @@
+---
+name: 'Terraform CI'
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+
+permissions:
+  id-token: write  # This is required for requesting the JWT
+  contents: read
+
+jobs:
+  terraform:
+    name: 'Terraform Test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      ROLE_ARN: "arn:aws:iam::303467602807:role/secret-tester"
+
+    # Use the Bash shell regardless whether the GitHub Actions runner
+    # is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          role-session-name: "terraform-ci"
+          aws-region: "us-west-1"
+
+      # Install the latest version of Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      # Prepare Python environment
+      - name: Setup Python Environment
+        run: make bootstrap
+
+      # Run all required linters
+      - name: Code Style Check
+        run: make lint
+
+      # Generates an execution plan for Terraform
+      - name: Terraform Tests
+        run: make test
