@@ -124,7 +124,10 @@ def probe_role(boto3_session, keep_after):
                 f"""
                 role_arn     = "{TEST_ROLE_ARN}"
                 region       = "{REGION}"
-                trusted_arns = ["arn:aws:iam::990466748045:user/aleks"]
+                trusted_arns = [
+                    "arn:aws:iam::990466748045:user/aleks",
+                    "{TEST_ROLE_ARN}"
+                ]
                 """
             )
         )
