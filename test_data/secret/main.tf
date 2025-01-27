@@ -8,6 +8,7 @@ module "test" {
   readers            = var.readers
   secret_value       = var.secret_value == "generate" ? random_password.value.result : var.secret_value
   tags               = var.tags
+  environment        = "development"
 }
 
 resource "random_password" "value" {

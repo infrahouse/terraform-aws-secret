@@ -48,7 +48,6 @@ variable "secret_value" {
 variable "environment" {
   description = "Name of environment."
   type        = string
-  default     = "development"
 }
 
 variable "service_name" {
