@@ -42,4 +42,6 @@ locals {
     account : data.aws_caller_identity.current.account_id
     created_by_module : "infrahouse/secret/aws"
   }
+
+  readers_only = var.readers != null ? (var.writers != null ? setsubtract(toset(var.readers), toset(var.writers)) : var.readers) : null
 }

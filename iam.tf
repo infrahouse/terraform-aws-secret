@@ -73,7 +73,7 @@ data "aws_iam_policy_document" "permission-policy" {
       }
       condition {
         test     = "ArnLike"
-        values   = var.readers
+        values   = local.readers_only
         variable = "aws:PrincipalArn"
       }
       actions = local.read_actions
@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "permission-policy" {
       }
       condition {
         test     = "ArnLike"
-        values   = var.readers
+        values   = local.readers_only
         variable = "aws:PrincipalArn"
       }
       actions = concat(
