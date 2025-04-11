@@ -411,3 +411,65 @@ def test_module_tags(secretsmanager_client, keep_after, test_role_arn):
                 "Value": "303467602807",
             },
         ]
+
+
+def test_module_duplicate_role(
+    probe_role, secretsmanager_client, keep_after, test_role_arn
+):
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
+    probe_role_arn = probe_role["role_arn"]["value"]
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                region = "{REGION}"
+                role_arn = "{test_role_arn}"
+
+                admins = [
+                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
+                    "{test_role_arn}"
+                ]
+                writers = [
+                    "{probe_role_arn}"
+                ]
+                readers = [
+                    "{probe_role_arn}"
+                ]
+                """
+            )
+        )
+
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=not keep_after,
+        json_output=True,
+        enable_trace=TRACE_TERRAFORM,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+        sm_client = get_secretsmanager_client_by_role(probe_role["role_arn"]["value"])
+
+        # Can read
+        assert (
+            sm_client.get_secret_value(
+                SecretId="foo",
+            )["SecretString"]
+            == "bar"
+        )
+
+        # Can write
+        sm_client.put_secret_value(
+            SecretId="foo",
+            SecretString="barbar",
+        )
+        assert (
+            sm_client.get_secret_value(
+                SecretId="foo",
+            )["SecretString"]
+            == "barbar"
+        )
+
+        # Can't delete
+        with pytest.raises(ClientError) as err:
+            sm_client.delete_secret(SecretId="foo", ForceDeleteWithoutRecovery=True)
+        assert err.type is ClientError
+        assert err.value.response["Error"]["Code"] == "AccessDeniedException"
