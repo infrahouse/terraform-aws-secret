@@ -14,3 +14,7 @@ data "external" "secret_value" {
     aws_secretsmanager_secret_version.current
   ]
 }
+
+data "aws_iam_role" "accessanalyzer" {
+  name = "AWSServiceRoleForAccessAnalyzer"
+}

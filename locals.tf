@@ -1,4 +1,9 @@
 locals {
+  access_analyzer_actions = [
+    "secretsmanager:DescribeSecret",
+    "secretsmanager:GetResourcePolicy",
+    "secretsmanager:ListSecrets",
+  ]
   list_actions = [
     "secretsmanager:BatchGetSecretValue",
     "secretsmanager:ListSecrets",
@@ -43,5 +48,10 @@ locals {
     created_by_module : "infrahouse/secret/aws"
   }
 
-  readers_only = var.readers != null ? (var.writers != null ? setsubtract(toset(var.readers), toset(var.writers)) : var.readers) : null
+  readers_only = var.readers != null ? (
+    var.writers != null ? setsubtract(
+      toset(var.readers),
+      toset(var.writers)
+    ) : var.readers
+  ) : null
 }

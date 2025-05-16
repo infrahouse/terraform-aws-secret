@@ -109,6 +109,41 @@ data "aws_iam_policy_document" "permission-policy" {
     }
   }
 
+  # Access Analyzer permissions
+  statement {
+    effect = "Allow"
+    principals {
+      type = "AWS"
+      identifiers = [
+        data.aws_iam_role.accessanalyzer.arn
+      ]
+    }
+    actions   = local.access_analyzer_actions
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Deny"
+    principals {
+      type = "AWS"
+      identifiers = [
+        data.aws_iam_role.accessanalyzer.arn
+      ]
+    }
+    actions = setsubtract(
+      concat(
+        local.list_actions,
+        local.read_actions,
+        local.write_actions,
+        local.admin_actions,
+        local.permission_management_actions,
+        local.tagging_actions,
+      ),
+      local.access_analyzer_actions
+    )
+    resources = ["*"]
+  }
+
   ## The rest
   statement {
     effect = "Deny"
@@ -123,7 +158,10 @@ data "aws_iam_policy_document" "permission-policy" {
     condition {
       test = "ArnNotLike"
       values = concat(
-        [data.aws_iam_role.caller_role.arn],
+        [
+          data.aws_iam_role.caller_role.arn,
+          data.aws_iam_role.accessanalyzer.arn
+        ],
         var.admins == null ? [] : var.admins,
         var.writers == null ? [] : var.writers,
         var.readers == null ? [] : var.readers
