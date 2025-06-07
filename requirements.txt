@@ -4,5 +4,5 @@ botocore ~= 1.26
 infrahouse-toolkit ~= 2.0
 myst-parser ~=4.0
 pytest-timeout ~= 2.1
-pytest-rerunfailures ~= 12.0
+pytest-rerunfailures ~=15.1
 requests ~= 2.31
