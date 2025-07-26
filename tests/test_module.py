@@ -5,7 +5,7 @@ from textwrap import dedent
 
 import pytest
 from botocore.exceptions import ClientError
-from infrahouse_toolkit.terraform import terraform_apply
+from pytest_infrahouse import terraform_apply
 
 from tests.conftest import (
     LOG,
