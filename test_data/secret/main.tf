@@ -3,12 +3,15 @@ module "test" {
   secret_description = "Foo description"
   secret_name        = var.secret_name
   secret_name_prefix = var.secret_name_prefix
-  admins             = var.admins
-  writers            = var.writers
-  readers            = var.readers
-  secret_value       = var.secret_value == "generate" ? random_password.value.result : var.secret_value
-  tags               = var.tags
-  environment        = "development"
+  admins = concat(
+    tolist(data.aws_iam_roles.sso-admin.arns),
+    var.admins
+  )
+  writers      = var.writers
+  readers      = var.readers
+  secret_value = var.secret_value == "generate" ? random_password.value.result : var.secret_value
+  tags         = var.tags
+  environment  = "development"
 }
 
 resource "random_password" "value" {

@@ -1,9 +1,9 @@
 variable "region" {}
 variable "role_arn" {}
 
-variable "admins" { default = null }
-variable "writers" { default = null }
-variable "readers" { default = null }
+variable "admins" { default = [] }
+variable "writers" { default = [] }
+variable "readers" { default = [] }
 variable "secret_name" {
   default = "foo"
 }

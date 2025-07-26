@@ -110,38 +110,44 @@ data "aws_iam_policy_document" "permission-policy" {
   }
 
   # Access Analyzer permissions
-  statement {
-    effect = "Allow"
-    principals {
-      type = "AWS"
-      identifiers = [
-        data.aws_iam_role.accessanalyzer.arn
-      ]
+  dynamic "statement" {
+    for_each = data.aws_iam_roles.access-analyzer.arns
+    content {
+      effect = "Allow"
+      principals {
+        type = "AWS"
+        identifiers = [
+          statement.key
+        ]
+      }
+      actions   = local.access_analyzer_actions
+      resources = ["*"]
     }
-    actions   = local.access_analyzer_actions
-    resources = ["*"]
   }
 
-  statement {
-    effect = "Deny"
-    principals {
-      type = "AWS"
-      identifiers = [
-        data.aws_iam_role.accessanalyzer.arn
-      ]
+  dynamic "statement" {
+    for_each = data.aws_iam_roles.access-analyzer.arns
+    content {
+      effect = "Deny"
+      principals {
+        type = "AWS"
+        identifiers = [
+          statement.key
+        ]
+      }
+      actions = setsubtract(
+        concat(
+          local.list_actions,
+          local.read_actions,
+          local.write_actions,
+          local.admin_actions,
+          local.permission_management_actions,
+          local.tagging_actions,
+        ),
+        local.access_analyzer_actions
+      )
+      resources = ["*"]
     }
-    actions = setsubtract(
-      concat(
-        local.list_actions,
-        local.read_actions,
-        local.write_actions,
-        local.admin_actions,
-        local.permission_management_actions,
-        local.tagging_actions,
-      ),
-      local.access_analyzer_actions
-    )
-    resources = ["*"]
   }
 
   ## The rest
@@ -160,8 +166,8 @@ data "aws_iam_policy_document" "permission-policy" {
       values = concat(
         [
           data.aws_iam_role.caller_role.arn,
-          data.aws_iam_role.accessanalyzer.arn
         ],
+        tolist(data.aws_iam_roles.access-analyzer.arns),
         var.admins == null ? [] : var.admins,
         var.writers == null ? [] : var.writers,
         var.readers == null ? [] : var.readers
