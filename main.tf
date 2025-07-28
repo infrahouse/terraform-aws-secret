@@ -8,6 +8,7 @@ resource "aws_secretsmanager_secret" "secret" {
   tags = merge(
     {
       owner : var.owner == null ? data.aws_iam_role.caller_role.arn : var.owner
+      module_version : local.module_version
     },
     var.tags,
     local.default_module_tags,

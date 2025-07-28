@@ -1,4 +1,25 @@
 # terraform-aws-secret
+
+See the [Implementing Compliant Secrets with AWS Secrets Manager](https://infrahouse.com/blog/2024-09-29-compliant-secrets/) blog post.
+
+```hcl
+module "secret" {
+  source  = "infrahouse/secret/aws"
+  version = "1.0.2"
+  
+  secret_description = "API token to some service."
+  secret_name        = "API_KEY"
+  secret_value       = random_id.api_key.hex
+  environment        = "production"
+  writers      = [
+    data.aws_iam_role.sso["AWSAdministratorAccess"].arn,
+  ]
+  readers = [
+    data.aws_iam_role.sso["Developers"].arn,
+    aws_iam_role.ecs_task.arn,
+  ]
+}
+```
 ## Requirements
 
 | Name | Version |

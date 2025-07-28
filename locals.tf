@@ -1,4 +1,6 @@
 locals {
+  module_version = "1.0.2"
+
   access_analyzer_actions = [
     "secretsmanager:DescribeSecret",
     "secretsmanager:GetResourcePolicy",
