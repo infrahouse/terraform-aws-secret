@@ -18,7 +18,7 @@ env:
 jobs:
   publish:
     name: 'Publish Module'
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted", "Linux", "noble"]
     environment: production
     timeout-minutes: 60
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
@@ -37,6 +37,11 @@ jobs:
           role-to-assume: ${{ env.ROLE_ARN }}
           role-session-name: github-actions
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       # Prepare Python environment
       - name: Setup Python Environment

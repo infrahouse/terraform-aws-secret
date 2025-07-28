@@ -1,33 +1,31 @@
 import json
 from os import path as osp
+from pprint import pprint
 from textwrap import dedent
 
 import pytest
 from botocore.exceptions import ClientError
-from infrahouse_toolkit.terraform import terraform_apply
+from pytest_infrahouse import terraform_apply
 
 from tests.conftest import (
     LOG,
-    TRACE_TERRAFORM,
-    REGION,
     TERRAFORM_ROOT_DIR,
     get_secretsmanager_client_by_role,
 )
 
 
 @pytest.mark.parametrize("probe_role_suffix", ["", "*"])
-def test_module(probe_role, keep_after, test_role_arn, probe_role_suffix):
+def test_module(probe_role, keep_after, test_role_arn, probe_role_suffix, aws_region):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
                 admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
                     "{probe_role_arn}{probe_role_suffix}"
                 ]
                 """
@@ -38,23 +36,23 @@ def test_module(probe_role, keep_after, test_role_arn, probe_role_suffix):
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
 
 
-def test_module_no_access(probe_role, secretsmanager_client, keep_after, test_role_arn):
+def test_module_no_access(
+    probe_role, secretsmanager_client, keep_after, test_role_arn, aws_region
+):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
                 admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
                     "{test_role_arn}"
                 ]
                 """
@@ -65,10 +63,11 @@ def test_module_no_access(probe_role, secretsmanager_client, keep_after, test_ro
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
-        sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+        sm_client = get_secretsmanager_client_by_role(
+            probe_role_arn, test_role_arn, aws_region
+        )
         with pytest.raises(ClientError) as err:
             sm_client.get_secret_value(
                 SecretId="foo",
@@ -89,7 +88,12 @@ def test_module_no_access(probe_role, secretsmanager_client, keep_after, test_ro
 
 @pytest.mark.parametrize("probe_role_suffix", ["", "*"])
 def test_module_reads(
-    probe_role, secretsmanager_client, keep_after, test_role_arn, probe_role_suffix
+    probe_role,
+    secretsmanager_client,
+    keep_after,
+    test_role_arn,
+    probe_role_suffix,
+    aws_region,
 ):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
@@ -97,11 +101,10 @@ def test_module_reads(
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
                 admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
                     "{test_role_arn}"
                 ]
                 readers = [
@@ -115,10 +118,11 @@ def test_module_reads(
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
-        sm_client = get_secretsmanager_client_by_role(probe_role["role_arn"]["value"])
+        sm_client = get_secretsmanager_client_by_role(
+            probe_role["role_arn"]["value"], test_role_arn, aws_region
+        )
         # Can read
         assert (
             sm_client.get_secret_value(
@@ -139,7 +143,12 @@ def test_module_reads(
 
 @pytest.mark.parametrize("probe_role_suffix", ["", "*"])
 def test_module_writes(
-    probe_role, secretsmanager_client, keep_after, test_role_arn, probe_role_suffix
+    probe_role,
+    secretsmanager_client,
+    keep_after,
+    test_role_arn,
+    probe_role_suffix,
+    aws_region,
 ):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
@@ -147,11 +156,10 @@ def test_module_writes(
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
                 admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
                     "{test_role_arn}"
                 ]
                 writers = [
@@ -165,10 +173,11 @@ def test_module_writes(
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
-        sm_client = get_secretsmanager_client_by_role(probe_role["role_arn"]["value"])
+        sm_client = get_secretsmanager_client_by_role(
+            probe_role["role_arn"]["value"], test_role_arn, aws_region
+        )
 
         # Can read
         assert (
@@ -197,18 +206,16 @@ def test_module_writes(
         assert err.value.response["Error"]["Code"] == "AccessDeniedException"
 
 
-def test_module_secret_value(probe_role, keep_after, test_role_arn):
+def test_module_secret_value(probe_role, keep_after, test_role_arn, aws_region):
     probe_role_arn = probe_role["role_arn"]["value"]
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
-                admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
-                ]
+                admins = []
 
                 writers = [
                     "{probe_role_arn}"
@@ -222,12 +229,13 @@ def test_module_secret_value(probe_role, keep_after, test_role_arn):
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
 
         secret_value_0 = tf_output["secret_value"]["value"]
-        sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+        sm_client = get_secretsmanager_client_by_role(
+            probe_role_arn, test_role_arn, aws_region
+        )
         # Can read
         assert (
             sm_client.get_secret_value(
@@ -246,9 +254,10 @@ def test_module_secret_value(probe_role, keep_after, test_role_arn):
             terraform_module_dir,
             destroy_after=not keep_after,
             json_output=True,
-            enable_trace=TRACE_TERRAFORM,
         ):
-            sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+            sm_client = get_secretsmanager_client_by_role(
+                probe_role_arn, test_role_arn, aws_region
+            )
             assert (
                 sm_client.get_secret_value(
                     SecretId="foo",
@@ -257,7 +266,7 @@ def test_module_secret_value(probe_role, keep_after, test_role_arn):
             )
 
 
-def test_module_external_value(probe_role, keep_after, test_role_arn):
+def test_module_external_value(probe_role, keep_after, test_role_arn, aws_region):
     """
     Create a secret, set the value outside of Terraform
     """
@@ -267,11 +276,9 @@ def test_module_external_value(probe_role, keep_after, test_role_arn):
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
-                admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
-                ]
+                admins = []
 
                 writers = [
                     "{probe_role_arn}"
@@ -285,7 +292,6 @@ def test_module_external_value(probe_role, keep_after, test_role_arn):
         terraform_module_dir,
         destroy_after=True,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
 
@@ -294,12 +300,13 @@ def test_module_external_value(probe_role, keep_after, test_role_arn):
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
 
         # secret_value_0 = tf_output["secret_value"]["value"]
-        sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+        sm_client = get_secretsmanager_client_by_role(
+            probe_role_arn, test_role_arn, aws_region
+        )
         assert (
             sm_client.get_secret_value(
                 SecretId="foo",
@@ -317,9 +324,10 @@ def test_module_external_value(probe_role, keep_after, test_role_arn):
             terraform_module_dir,
             destroy_after=not keep_after,
             json_output=True,
-            enable_trace=TRACE_TERRAFORM,
         ):
-            sm_client = get_secretsmanager_client_by_role(probe_role_arn)
+            sm_client = get_secretsmanager_client_by_role(
+                probe_role_arn, test_role_arn, aws_region
+            )
             assert (
                 sm_client.get_secret_value(
                     SecretId="foo",
@@ -328,20 +336,18 @@ def test_module_external_value(probe_role, keep_after, test_role_arn):
             )
 
 
-def test_module_name_prefix(keep_after, test_role_arn):
+def test_module_name_prefix(keep_after, test_role_arn, aws_region):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
                 secret_name = null
                 secret_name_prefix = "some_secret"
 
-                admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
-                ]
+                admins = []
                 """
             )
         )
@@ -350,19 +356,20 @@ def test_module_name_prefix(keep_after, test_role_arn):
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
         assert tf_output["secret_name"]["value"].startswith("some_secret")
 
 
-def test_module_tags(secretsmanager_client, keep_after, test_role_arn):
+def test_module_tags(
+    boto3_session, secretsmanager_client, keep_after, test_role_arn, aws_region
+):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
                 tags = {{
                     tag1: "value1"
@@ -375,12 +382,12 @@ def test_module_tags(secretsmanager_client, keep_after, test_role_arn):
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
         response = secretsmanager_client.describe_secret(
             SecretId=tf_output["secret_arn"]["value"]
         )
+        sts_client = boto3_session.client("sts", region_name=aws_region)
         assert response["Tags"] == [
             {
                 "Key": "owner",
@@ -408,13 +415,13 @@ def test_module_tags(secretsmanager_client, keep_after, test_role_arn):
             },
             {
                 "Key": "account",
-                "Value": "303467602807",
+                "Value": sts_client.get_caller_identity()["Account"],
             },
         ]
 
 
 def test_module_duplicate_role(
-    probe_role, secretsmanager_client, keep_after, test_role_arn
+    probe_role, secretsmanager_client, keep_after, test_role_arn, aws_region
 ):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
@@ -422,11 +429,10 @@ def test_module_duplicate_role(
         fp.write(
             dedent(
                 f"""
-                region = "{REGION}"
+                region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
                 admins = [
-                    "arn:aws:iam::303467602807:role/aws-reserved/sso.amazonaws.com/us-west-1/AWSReservedSSO_AWSAdministratorAccess_422821c726d81c14",
                     "{test_role_arn}"
                 ]
                 writers = [
@@ -443,10 +449,11 @@ def test_module_duplicate_role(
         terraform_module_dir,
         destroy_after=not keep_after,
         json_output=True,
-        enable_trace=TRACE_TERRAFORM,
     ) as tf_output:
         LOG.info("%s", json.dumps(tf_output, indent=4))
-        sm_client = get_secretsmanager_client_by_role(probe_role["role_arn"]["value"])
+        sm_client = get_secretsmanager_client_by_role(
+            probe_role["role_arn"]["value"], test_role_arn, aws_region
+        )
 
         # Can read
         assert (

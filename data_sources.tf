@@ -15,6 +15,7 @@ data "external" "secret_value" {
   ]
 }
 
-data "aws_iam_role" "accessanalyzer" {
-  name = "AWSServiceRoleForAccessAnalyzer"
+data "aws_iam_roles" "access-analyzer" {
+  name_regex  = "AWSServiceRoleForAccessAnalyzer"
+  path_prefix = "/aws-service-role/access-analyzer.amazonaws.com/"
 }

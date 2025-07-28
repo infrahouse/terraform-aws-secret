@@ -11,7 +11,7 @@ permissions:
 jobs:
   terraform:
     name: 'Terraform Test'
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted", "Linux", "noble"]
     timeout-minutes: 120
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -40,6 +40,11 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       # Prepare Python environment
       - name: Setup Python Environment
