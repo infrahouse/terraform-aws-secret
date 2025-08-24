@@ -10,7 +10,8 @@ from pytest_infrahouse import terraform_apply
 from tests.conftest import (
     LOG,
     TERRAFORM_ROOT_DIR,
-    get_secretsmanager_client_by_role, MODULE_VERSION,
+    get_secretsmanager_client_by_role,
+    MODULE_VERSION,
 )
 
 
