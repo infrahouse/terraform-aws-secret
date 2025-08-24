@@ -11,6 +11,7 @@ from tests.conftest import (
     LOG,
     TERRAFORM_ROOT_DIR,
     get_secretsmanager_client_by_role,
+    MODULE_VERSION,
 )
 
 
@@ -388,7 +389,7 @@ def test_module_tags(
             SecretId=tf_output["secret_arn"]["value"]
         )
         sts_client = boto3_session.client("sts", region_name=aws_region)
-        assert response["Tags"] == [
+        expected_tags = [
             {
                 "Key": "owner",
                 "Value": test_role_arn,
@@ -417,7 +418,13 @@ def test_module_tags(
                 "Key": "account",
                 "Value": sts_client.get_caller_identity()["Account"],
             },
+            {
+                "Key": "module_version",
+                "Value": MODULE_VERSION,
+            },
         ]
+        for tag in expected_tags:
+            assert tag in response["Tags"]
 
 
 def test_module_duplicate_role(

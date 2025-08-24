@@ -8,6 +8,7 @@ from os import path as osp
 from infrahouse_core.logging import setup_logging
 from pytest_infrahouse import terraform_apply
 
+MODULE_VERSION = "1.0.3"
 # TEST_ROLE_ARN = "arn:aws:iam::303467602807:role/secret-tester"
 DEFAULT_PROGRESS_INTERVAL = 10
 
