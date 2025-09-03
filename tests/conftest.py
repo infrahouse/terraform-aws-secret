@@ -8,7 +8,7 @@ from os import path as osp
 from infrahouse_core.logging import setup_logging
 from pytest_infrahouse import terraform_apply
 
-MODULE_VERSION = "1.0.3"
+MODULE_VERSION = "1.1.0"
 DEFAULT_PROGRESS_INTERVAL = 10
 
 LOG = logging.getLogger()

@@ -1,5 +1,5 @@
 locals {
-  module_version = "1.0.3"
+  module_version = "1.1.0"
 
   access_analyzer_actions = [
     "secretsmanager:DescribeSecret",
