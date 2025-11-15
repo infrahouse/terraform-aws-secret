@@ -22,6 +22,29 @@ def get_secret(secretsmanager_client, secret_id):
 
 def get_client(region, role_arn):
     sts = boto3.client("sts")
+
+    # Get current caller identity to check if we're already using the target role
+    caller_identity = sts.get_caller_identity()
+    current_arn = caller_identity["Arn"]
+
+    # Extract role name from the target role ARN
+    # Format: arn:aws:iam::{account}:role/{path}/{role-name}
+    # Role name is the last part after the final /
+    target_role_name = role_arn.split("/")[-1]
+
+    # Check if we're already using the target role
+    # For assumed roles, the ARN format is:
+    # arn:aws:sts::{account}:assumed-role/{role-name}/{session-name}
+    # This handles:
+    # - AWS SSO users (assumed-role ARN contains the role name)
+    # - Regular IAM roles already in use
+    # - Any scenario where re-assuming the same role is unnecessary
+    if f"assumed-role/{target_role_name}/" in current_arn:
+        # Already using the target role, use current session
+        session = boto3.Session(region_name=region)
+        return session.client("secretsmanager")
+
+    # Different role - need to assume it (existing behavior)
     iam_role = sts.assume_role(
         RoleArn=role_arn, RoleSessionName="terraform-aws-secret-data-source"
     )
