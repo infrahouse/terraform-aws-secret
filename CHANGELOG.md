@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2025-11-15
+
+### Bug Fixes
+
+- Skip role assumption when already using target role ([#34](https://github.com/infrahouse/terraform-aws-secret/issues/34)) ([#35](https://github.com/infrahouse/terraform-aws-secret/issues/35))
+
 ## [Unreleased]
 
 ### Bug Fixes
