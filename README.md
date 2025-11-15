@@ -5,7 +5,7 @@ See the [Implementing Compliant Secrets with AWS Secrets Manager](https://infrah
 ```hcl
 module "secret" {
   source  = "infrahouse/secret/aws"
-  version = "1.1.0"
+  version = "1.1.1"
   
   secret_description = "API token to some service."
   secret_name        = "API_KEY"
