@@ -7,6 +7,8 @@ name: Terraform Module Review
 
 on:  # yamllint disable-line rule:truthy
   pull_request:
+    paths-ignore:
+      - '.github/workflows/**'
 
 concurrency:
   group: terraform-review-${{ github.event.pull_request.number }}
