@@ -22,3 +22,4 @@ https://github.com/infrahouse8/github-control
 
 ## InfraHouse Terraform testing
 * The root module must define variables in terraform.tfvars
+* .github/workflows/terraform-CD.yml must run on a self-hosted runner. GitHub provided runners don't have ih-registry command.
