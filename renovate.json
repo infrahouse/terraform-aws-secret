@@ -12,6 +12,7 @@
         ".github/workflows/terraform-CD.yml",
         ".github/workflows/vuln-scanner-pr-public.yml",
         ".github/workflows/vuln-scanner-pr-private.yml",
+        ".github/workflows/vuln-scanner-pr.yml",
         ".github/workflows/terraform-review.yml"
       ],
       "enabled": false
