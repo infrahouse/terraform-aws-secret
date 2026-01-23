@@ -1,10 +1,43 @@
 # terraform-aws-secret
 
-See the [Implementing Compliant Secrets with AWS Secrets Manager](https://infrahouse.com/blog/2024-09-29-compliant-secrets/) blog post.
+[![Need Help?](https://img.shields.io/badge/Need%20Help%3F-Contact%20Us-0066CC)](https://infrahouse.com/contact)
+[![Docs](https://img.shields.io/badge/docs-github.io-blue)](https://infrahouse.github.io/terraform-aws-secret/)
+[![Registry](https://img.shields.io/badge/Terraform-Registry-purple?logo=terraform)](https://registry.terraform.io/modules/infrahouse/secret/aws/latest)
+[![Release](https://img.shields.io/github/release/infrahouse/terraform-aws-secret.svg)](https://github.com/infrahouse/terraform-aws-secret/releases/latest)
+[![AWS Secrets Manager](https://img.shields.io/badge/AWS-Secrets%20Manager-orange?logo=amazonaws)](https://aws.amazon.com/secrets-manager/)
+[![Security](https://img.shields.io/github/actions/workflow/status/infrahouse/terraform-aws-secret/vuln-scanner-pr.yml?label=Security)](https://github.com/infrahouse/terraform-aws-secret/actions/workflows/vuln-scanner-pr.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
+Terraform module for managing AWS Secrets Manager secrets with fine-grained IAM-based access control.
+
+## Why This Module?
+
+Managing secrets in AWS can be complex:
+- **IAM policies are verbose** - Writing correct resource-based policies for Secrets Manager requires deep AWS knowledge
+- **Access control is error-prone** - It's easy to accidentally grant too much or too little access
+- **Compliance requirements** - Many frameworks (SOC 2, HIPAA, PCI DSS) require audit trails and access controls
+
+This module solves these problems by:
+- Providing simple `admins`, `readers`, and `writers` lists for role-based access
+- Automatically generating secure, least-privilege IAM policies
+- Supporting both Terraform-managed and externally-managed secret values
+- Adding consistent tagging for compliance and cost tracking
+
+See the [Implementing Compliant Secrets with AWS Secrets Manager](https://infrahouse.com/blog/2024-09-29-compliant-secrets/) blog post for more details.
+
+## Features
+
+- **Fine-grained access control** - Separate admin, reader, and writer roles with least-privilege policies
+- **Flexible secret values** - Provide values at deploy time or set them externally via AWS Console/CLI
+- **Wildcard support** - Use wildcards in role ARNs for dynamic role matching (e.g., SSO roles)
+- **Automatic tagging** - Consistent tags for environment, service, owner, and module version
+- **AWS Provider v5 & v6 support** - Compatible with both AWS provider versions
+
+## Quick Start
 
 ```hcl
 module "secret" {
-  source  = "infrahouse/secret/aws"
+  source  = "registry.infrahouse.com/infrahouse/secret/aws"
   version = "1.1.1"
   
   secret_description = "API token to some service."
@@ -21,6 +54,10 @@ module "secret" {
 }
 ```
 
+## Documentation
+
+Full documentation is available at [infrahouse.github.io/terraform-aws-secret](https://infrahouse.github.io/terraform-aws-secret/).
+
 ## Use Cases
 
 This module supports two primary workflows for managing secrets:
@@ -31,8 +68,8 @@ When you know the secret value at deployment time (e.g., generated passwords, AP
 
 ```hcl
 module "database_password" {
-  source  = "infrahouse/secret/aws"
-  version = "~> 1.1"
+  source  = "registry.infrahouse.com/infrahouse/secret/aws"
+  version = "1.1.1"
 
   secret_name        = "database-password"
   secret_description = "PostgreSQL database password"
@@ -49,8 +86,8 @@ When the secret value comes from an external source (e.g., third-party API keys,
 
 ```hcl
 module "external_api_key" {
-  source  = "infrahouse/secret/aws"
-  version = "~> 1.1"
+  source  = "registry.infrahouse.com/infrahouse/secret/aws"
+  version = "1.1.1"
 
   secret_name        = "pypi-api-token"
   secret_description = "PyPI API token for package publishing"
@@ -95,9 +132,9 @@ pip install boto3
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.28.0 |
-| <a name="provider_external"></a> [external](#provider\_external) | 2.3.5 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.2.4 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.11, < 7.0 |
+| <a name="provider_external"></a> [external](#provider\_external) | n/a |
+| <a name="provider_null"></a> [null](#provider\_null) | ~> 3.0 |
 
 ## Modules
 
@@ -142,3 +179,15 @@ No modules.
 | <a name="output_secret_name"></a> [secret\_name](#output\_secret\_name) | Name of the created secret |
 | <a name="output_secret_value"></a> [secret\_value](#output\_secret\_value) | The current secret value. If the value isn't set yet, return `null`. |
 <!-- END_TF_DOCS -->
+
+## Examples
+
+See the [examples/](examples/) directory for complete working examples.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+Apache 2.0 Licensed. See [LICENSE](LICENSE) for full details.

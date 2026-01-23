@@ -54,9 +54,9 @@ test-clean:  ## Run a test and destroy resources (use TEST_PATH and TEST_FILTER 
 		2>&1 | tee pytest-`date +%Y%m%d-%H%M%S`-output.log
 
 .PHONY: bootstrap
-bootstrap: ## bootstrap the development environment
-	pip install -U "pip ~= 23.1"
-	pip install -U "setuptools ~= 68.0"
+bootstrap: install-hooks ## bootstrap the development environment
+	pip install -U "pip ~= 25.0"
+	pip install -U "setuptools ~= 80.0"
 	pip install -r requirements.txt
 
 .PHONY: clean

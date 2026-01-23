@@ -8,12 +8,6 @@ All notable changes to this project will be documented in this file.
 
 - Skip role assumption when already using target role ([#34](https://github.com/infrahouse/terraform-aws-secret/issues/34)) ([#35](https://github.com/infrahouse/terraform-aws-secret/issues/35))
 
-## [Unreleased]
-
-### Bug Fixes
-
-- Skip role assumption when already using target role ([#34](https://github.com/infrahouse/terraform-aws-secret/issues/34))
-
 ### Miscellaneous Tasks
 
 - Add git-cliff configuration for automated changelog generation
