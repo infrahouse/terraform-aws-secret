@@ -1,3 +1,18 @@
+check "service_name_deprecation" {
+  assert {
+    condition     = var.service_name != "unknown"
+    error_message = "DEPRECATION WARNING: Using default value 'unknown' for service_name is deprecated and will be removed in v2.0. Please specify service_name explicitly."
+  }
+}
+
+resource "null_resource" "validate_secret_name" {
+  lifecycle {
+    precondition {
+      condition     = local.secret_name_check
+      error_message = "Exactly one of secret_name or secret_name_prefix must be set (not both, not neither)"
+    }
+  }
+}
 
 resource "aws_secretsmanager_secret" "secret" {
   description             = var.secret_description

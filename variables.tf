@@ -43,15 +43,24 @@ variable "secret_value" {
   description = "Optional value of the secret."
   type        = string
   default     = null
+  sensitive   = true
 }
 
 variable "environment" {
   description = "Name of environment."
   type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9_]+$", var.environment))
+    error_message = "environment must contain only lowercase letters, numbers, and underscores (no hyphens). Got: ${var.environment}"
+  }
 }
 
 variable "service_name" {
-  description = "Descriptive name of a service that will use this secret."
+  description = <<-EOT
+    Descriptive name of a service that will use this secret.
+    DEPRECATED: Default value "unknown" will be removed in v2.0. Please specify explicitly.
+  EOT
   type        = string
   default     = "unknown"
 }

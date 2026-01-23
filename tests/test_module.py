@@ -484,6 +484,74 @@ def test_module_tags(
             assert tag in response["Tags"]
 
 
+def test_module_null_secret_value_output(
+    probe_role, keep_after, test_role_arn, aws_region, boto3_session
+):
+    """
+    Test that when secret_value input is null:
+    1. The secret_value output is None (not "NoValue")
+    2. After setting value via AWS SDK, output reflects the new value
+    """
+    probe_role_arn = probe_role["role_arn"]["value"]
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                region = "{aws_region}"
+                role_arn = "{test_role_arn}"
+                admins = []
+
+                writers = [
+                    "{probe_role_arn}"
+                ]
+                secret_value = null
+                """
+            )
+        )
+    init_terraform_tf(terraform_module_dir)
+
+    # First apply: secret_value output should be None when no AWSCURRENT exists
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=not keep_after,
+        json_output=True,
+    ) as tf_output:
+        LOG.info("First apply output: %s", json.dumps(tf_output, indent=4))
+
+        # Verify secret_value output is absent (Terraform omits null sensitive outputs)
+        assert "secret_value" not in tf_output, (
+            f"Expected secret_value to be absent when secret_value input is null, "
+            f"but got: {tf_output.get('secret_value')!r}"
+        )
+
+        # Set a real value via AWS SDK
+        sm_client = get_secretsmanager_client_by_role(
+            probe_role_arn, boto3_session, aws_region
+        )
+        sm_client.put_secret_value(
+            SecretId="foo",
+            SecretString="externally-set-value",
+        )
+
+        # Second apply: secret_value output should now reflect the externally set value
+        with terraform_apply(
+            terraform_module_dir,
+            destroy_after=not keep_after,
+            json_output=True,
+        ) as tf_output_2:
+            LOG.info("Second apply output: %s", json.dumps(tf_output_2, indent=4))
+
+            secret_value_output_2 = tf_output_2["secret_value"]["value"]
+            LOG.info(
+                "secret_value output after second apply: %r", secret_value_output_2
+            )
+            assert secret_value_output_2 == "externally-set-value", (
+                f"Expected secret_value output to be 'externally-set-value' after external update, "
+                f"got: {secret_value_output_2!r}"
+            )
+
+
 def test_module_duplicate_role(
     probe_role, keep_after, test_role_arn, aws_region, boto3_session
 ):
