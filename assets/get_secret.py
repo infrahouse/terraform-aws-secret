@@ -8,15 +8,26 @@ from botocore.exceptions import ClientError
 def get_secret(secretsmanager_client, secret_id):
     """
     Retrieve a value of a secret by its name.
+
+    Returns empty string if the secret doesn't exist or contains the placeholder
+    value "NoValue" (indicating secret_value input was null and no external value
+    has been set yet). Terraform output converts empty string to null.
+
+    Note: Terraform external data source requires all values to be strings,
+    so we cannot return None/null directly.
     """
     try:
         response = secretsmanager_client.get_secret_value(
             SecretId=secret_id,
         )
-        return response["SecretString"]
+        value = response["SecretString"]
+        # Return empty string for placeholder - Terraform output converts to null
+        if value == "NoValue":
+            return ""
+        return value
     except ClientError as e:
         if e.response["Error"]["Code"] == "ResourceNotFoundException":
-            return None
+            return ""
         raise
 
 

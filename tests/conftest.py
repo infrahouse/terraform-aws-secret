@@ -15,7 +15,7 @@ LOG = logging.getLogger()
 TERRAFORM_ROOT_DIR = "test_data"
 
 
-setup_logging(LOG, debug=True)
+setup_logging(LOG, debug_botocore=False)
 
 
 def get_secretsmanager_client_by_role(role_name, boto3_session, region):

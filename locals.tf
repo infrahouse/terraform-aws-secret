@@ -1,6 +1,12 @@
 locals {
   module_version = "1.1.1"
 
+  # Validation: exactly one of secret_name or secret_name_prefix must be set
+  secret_name_check = (
+    (var.secret_name != null && var.secret_name_prefix == null) ||
+    (var.secret_name == null && var.secret_name_prefix != null)
+  )
+
   access_analyzer_actions = [
     "secretsmanager:DescribeSecret",
     "secretsmanager:GetResourcePolicy",
