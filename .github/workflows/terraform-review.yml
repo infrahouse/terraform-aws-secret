@@ -94,6 +94,7 @@ jobs:
         if: steps.check_previous.outputs.has_previous == 'false'
         run: |
           npx @anthropic-ai/claude-code --print --output-format json \
+            --model opus \
             --dangerously-skip-permissions \
             "Launch the terraform-module-reviewer agent. \
           Review all changes in pr-changes.diff file. \
@@ -113,6 +114,7 @@ jobs:
         if: steps.check_previous.outputs.has_previous == 'true'
         run: |
           npx @anthropic-ai/claude-code --print --output-format json \
+            --model opus \
             --dangerously-skip-permissions \
             "Launch the terraform-module-reviewer agent. \
           This is a follow-up review. \
