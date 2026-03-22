@@ -53,6 +53,28 @@ else
     echo "⚠️  Skipping documentation check"
 fi
 
+# 3. Check that all staged files end with a newline
+echo "📝 Checking trailing newlines..."
+MISSING_NEWLINE=()
+for f in $(git diff --cached --name-only --diff-filter=ACM); do
+    # Skip binary files
+    if file --mime-encoding "$f" 2>/dev/null | grep -q binary; then
+        continue
+    fi
+    # Check if file ends with a newline
+    if [ -s "$f" ] && [ -n "$(tail -c 1 "$f" 2>/dev/null)" ]; then
+        MISSING_NEWLINE+=("$f")
+    fi
+done
+if [ ${#MISSING_NEWLINE[@]} -gt 0 ]; then
+    echo "❌ The following files do not end with a newline:"
+    for f in "${MISSING_NEWLINE[@]}"; do
+        echo "   $f"
+    done
+    exit 1
+fi
+echo "✅ All files end with a newline"
+
 echo ""
 echo "✨ All pre-commit checks passed!"
 echo "Happy coding!"
