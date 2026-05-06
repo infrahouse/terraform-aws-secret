@@ -15,14 +15,14 @@ Provide comprehensive, professional documentation and tooling for all InfraHouse
 - Module name and tagline
 - Comprehensive badge row
 
-**Badges to include:**
-- **Terraform Registry**: `[![Registry](https://img.shields.io/badge/terraform-registry-623CE4?logo=terraform)](registry url)`
-- **Latest Release**: `[![GitHub release](https://img.shields.io/github/v/release/infrahouse/repo-name)](release url)`
-- **License**: `[![License](https://img.shields.io/github/license/infrahouse/repo-name)](LICENSE)`
+**Badges (in this order):**
+- **Contact**: `[![Need Help?](https://img.shields.io/badge/Need%20Help%3F-Contact%20Us-0066CC)](https://infrahouse.com/contact)`
 - **Documentation**: `[![Docs](https://img.shields.io/badge/docs-github.io-blue)](https://infrahouse.github.io/repo-name/)`
-- **Security**: `[![Security](https://github.com/infrahouse/repo-name/actions/workflows/vuln-scanner-pr.yml/badge.svg)](workflow url)`
-- **AWS Service Badge(s)**: Link to relevant AWS service(s) the module uses (e.g., Lambda, ECS, RDS). Use shields.io badges with AWS service logos.
-- **Contact/Services**: `[![Need Help?](https://img.shields.io/badge/Need%20Help%3F-Contact%20Us-0066CC)](https://infrahouse.com/contact)` - Call to action for professional services
+- **Terraform Registry**: `[![Registry](https://img.shields.io/badge/Terraform-Registry-purple?logo=terraform)](https://registry.terraform.io/modules/infrahouse/module-name/aws/latest)`
+- **Latest Release**: `[![Release](https://img.shields.io/github/release/infrahouse/repo-name.svg)](https://github.com/infrahouse/repo-name/releases/latest)`
+- **AWS Service Badge(s)**: `[![AWS EC2](https://img.shields.io/badge/AWS-EC2-orange?logo=amazonec2)](https://aws.amazon.com/ec2/)` (link to relevant AWS service(s))
+- **Security**: `[![Security](https://img.shields.io/github/actions/workflow/status/infrahouse/repo-name/vuln-scanner-pr.yml?label=Security)](https://github.com/infrahouse/repo-name/actions/workflows/vuln-scanner-pr.yml)`
+- **License**: `[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)`
 
 **Content Sections:**
 1. Brief description (what it does, why it exists)
@@ -45,13 +45,34 @@ Provide comprehensive, professional documentation and tooling for all InfraHouse
 - `configuration.md` - All variables explained
 - `examples.md` - Common use cases
 - `troubleshooting.md` - Common issues
-- `changelog.md` - Or link to CHANGELOG.md
+- `changelog.md` - Symlink to CHANGELOG.md (`ln -fs ../CHANGELOG.md docs/changelog.md`)
 
 **Optional but Recommended:**
 - `comparison.md` - vs alternatives
 - `security.md` - Security considerations
 - `monitoring.md` - Observability setup
 - `upgrading.md` - Migration guides
+
+**Documentation Dependencies (`requirements.txt`):**
+```
+diagrams ~= 0.25
+mkdocs-material ~= 9.7
+mkdocs-minify-plugin ~= 0.8
+mkdocs-glightbox ~= 0.4
+```
+
+**`mkdocs.yml` Configuration:**
+- `site_name` must follow the pattern `InfraHouse <module name>`, where the `terraform-aws-` prefix
+  is omitted. For example, for `terraform-aws-actions-runner` the site name is
+  `InfraHouse actions-runner`.
+- The `glightbox` plugin must be enabled:
+```yaml
+plugins:
+  - search
+  - glightbox
+  - minify:
+      minify_html: true
+```
 
 ### 3. Repository Files
 
@@ -69,8 +90,6 @@ Provide comprehensive, professional documentation and tooling for all InfraHouse
 - `CONTRIBUTING.md` (contribution guidelines)
 - `SECURITY.md` (security policy, how to report vulnerabilities)
 - `CODEOWNERS` (auto-assign reviewers)
-- `.github/ISSUE_TEMPLATE/` (bug report, feature request)
-- `.github/PULL_REQUEST_TEMPLATE.md`
 
 ### 4. Testing & Quality
 
@@ -78,11 +97,29 @@ Provide comprehensive, professional documentation and tooling for all InfraHouse
 - `tests/` directory with pytest-based integration tests
   - Uses pytest-infrahouse fixtures
   - Uses infrahouse-core for validation
-  - Tests against multiple AWS provider versions
+  - Target AWS provider version: `~> 6.0` (AWS 5.x is being deprecated)
+  - Tests must use `aws_provider_version` parametrize to specify the provider version:
+    ```python
+    @pytest.mark.parametrize(
+        "aws_provider_version", ["~> 6.0"], ids=["aws-6"]
+    )
+    def test_module(
+        ...
+        aws_provider_version,
+    ):
+    ```
   - Makefile targets: `test-keep`/`test-clean` (for development), `test` (for CI)
 - Pre-commit hooks (terraform fmt, terraform-docs, tflint)
+- `make bootstrap` must install pre-commit hooks (via `install-hooks` dependency)
 - Automated CI/CD with terraform validate and plan
 - Security scanning (OSV, checkov, tfsec)
+
+**Security Dependencies (`requirements.txt`):**
+```
+checkov ~= 3.2
+```
+
+The repository must contain a `.checkov.yml` configuration file.
 
 ### 5. Release Automation
 
@@ -114,65 +151,109 @@ jobs:
 ```
 
 **Release Process** (via Makefile targets):
+
+The release process must:
+- Check that `git-cliff` and `bumpversion` are installed (with helpful install instructions on failure)
+- Verify the current branch is `main` (refuse to release from other branches)
+- Show the current and new version, then prompt for confirmation before proceeding
+- Update `CHANGELOG.md` using `git cliff --unreleased --tag <version> --prepend CHANGELOG.md`
+  and commit it with a commit-msg compliant message (`chore: update CHANGELOG for <version>`)
+- Bump the version using `bumpversion` with a compliant commit message
+  (`chore: bump version to <version>`)
+- Print next steps (`git push && git push --tags`) but NOT push automatically
+
+Use a shared `do_release` function for `release-patch`, `release-minor`, and `release-major`:
+
 ```makefile
-release-patch:
-	git-cliff --tag $(shell bumpversion --dry-run --list patch | grep new_version | cut -d= -f2) -o CHANGELOG.md
-	bumpversion patch
-	git push && git push --tags
-	# GitHub Actions workflow automatically creates the release
-```
+# Internal function to handle version release
+# Args: $(1) = major|minor|patch
+define do_release
+	@echo "Checking if git-cliff is installed..."
+	@command -v git-cliff >/dev/null 2>&1 || { \
+		echo ""; \
+		echo "Error: git-cliff is not installed."; \
+		echo ""; \
+		echo "Please install it using one of the following methods:"; \
+		echo ""; \
+		echo "  Cargo (Rust):"; \
+		echo "    cargo install git-cliff"; \
+		echo ""; \
+		echo "  Arch Linux:"; \
+		echo "    pacman -S git-cliff"; \
+		echo ""; \
+		echo "  Homebrew (macOS/Linux):"; \
+		echo "    brew install git-cliff"; \
+		echo ""; \
+		echo "  From binary (Linux/macOS/Windows):"; \
+		echo "    https://github.com/orhun/git-cliff/releases"; \
+		echo ""; \
+		echo "For more installation options, see: https://git-cliff.org/docs/installation"; \
+		echo ""; \
+		exit 1; \
+	}
+	@echo "Checking if bumpversion is installed..."
+	@command -v bumpversion >/dev/null 2>&1 || { \
+		echo ""; \
+		echo "Error: bumpversion is not installed."; \
+		echo ""; \
+		echo "Please install it using:"; \
+		echo "  make bootstrap"; \
+		echo ""; \
+		exit 1; \
+	}
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	if [ "$$BRANCH" != "main" ]; then \
+		echo "Error: You must be on the 'main' branch to release."; \
+		echo "Current branch: $$BRANCH"; \
+		exit 1; \
+	fi; \
+	CURRENT=$$(grep ^current_version .bumpversion.cfg | head -1 | cut -d= -f2 | tr -d ' '); \
+	echo "Current version: $$CURRENT"; \
+	MAJOR=$$(echo $$CURRENT | cut -d. -f1); \
+	MINOR=$$(echo $$CURRENT | cut -d. -f2); \
+	PATCH=$$(echo $$CURRENT | cut -d. -f3); \
+	if [ "$(1)" = "major" ]; then \
+		NEW_VERSION=$$((MAJOR + 1)).0.0; \
+	elif [ "$(1)" = "minor" ]; then \
+		NEW_VERSION=$$MAJOR.$$((MINOR + 1)).0; \
+	elif [ "$(1)" = "patch" ]; then \
+		NEW_VERSION=$$MAJOR.$$MINOR.$$((PATCH + 1)); \
+	fi; \
+	echo "New version will be: $$NEW_VERSION"; \
+	printf "Continue? (y/n) "; \
+	read -r REPLY; \
+	case "$$REPLY" in \
+		[Yy]|[Yy][Ee][Ss]) \
+			echo "Updating CHANGELOG.md with git-cliff..."; \
+			git cliff --unreleased --tag $$NEW_VERSION --prepend CHANGELOG.md; \
+			git add CHANGELOG.md; \
+			git commit -m "chore: update CHANGELOG for $$NEW_VERSION"; \
+			echo "Bumping version with bumpversion..."; \
+			bumpversion --new-version $$NEW_VERSION \
+				--message "chore: bump version to {new_version}" patch; \
+			echo ""; \
+			echo "Released version $$NEW_VERSION"; \
+			echo ""; \
+			echo "Next steps:"; \
+			echo "  git push && git push --tags"; \
+			;; \
+		*) \
+			echo "Release cancelled"; \
+			;; \
+	esac
+endef
 
-### 6. GitHub Repository Settings
+.PHONY: release-patch
+release-patch: ## Release a patch version (x.x.PATCH)
+	$(call do_release,patch)
 
-- GitHub Pages enabled (already automated!)
-- Topics/tags (terraform, aws, infrastructure, etc.)
-- About section with description and website link
-- Social media card image (optional but nice)
-- Discussions enabled (for community Q&A)
-- Issues with templates
-- Branch protection with required reviews
+.PHONY: release-minor
+release-minor: ## Release a minor version (x.MINOR.0)
+	$(call do_release,minor)
 
-### 7. Updates to CODING_STANDARD.md
-
-Proposed additions:
-
-```markdown
-* **README.md (required):**
-  - Header with module name and description
-  - Badge row with:
-    - Terraform Registry link
-    - Latest release version
-    - License
-    - Documentation (GitHub Pages link)
-    - Security scanning status
-    - Relevant AWS service badge
-  - "Why This Module?" section (differentiation)
-  - Features list
-  - Quick Start example
-  - Documentation links (to GitHub Pages)
-  - terraform-docs markers: `<!-- BEGIN_TF_DOCS -->` and `<!-- END_TF_DOCS -->`
-  - Links to Contributing and License
-
-* **GitHub Pages Documentation (required for terraform_module):**
-  - Deployed via .github/workflows/docs.yml
-  - Built with MkDocs (Material theme)
-  - Minimum pages: index, getting-started, configuration
-  - Architecture diagrams where applicable
-  - Working examples with explanations
-
-* **Repository Files (required):**
-  - LICENSE file (Apache 2.0 recommended)
-  - CHANGELOG.md (auto-generated via git-cliff)
-  - SECURITY.md (security policy)
-  - CONTRIBUTING.md (contribution guidelines)
-  - .github/workflows/release.yml (auto-create releases from tags)
-  - examples/ directory with working examples
-
-* **Repository Configuration:**
-  - GitHub Pages enabled and deployed
-  - Topics/tags set (terraform, aws, relevant services)
-  - About section filled with website link
-  - Issue and PR templates configured
+.PHONY: release-major
+release-major: ## Release a major version (MAJOR.0.0)
+	$(call do_release,major)
 ```
 
 ## Reference Implementation
@@ -180,17 +261,3 @@ Proposed additions:
 See [terraform-aws-actions-runner](https://github.com/infrahouse/terraform-aws-actions-runner) as the reference implementation:
 - [Published Documentation](https://infrahouse.github.io/terraform-aws-actions-runner/)
 - [Repository Page](https://github.com/infrahouse/terraform-aws-actions-runner)
-## Implementation Plan
-
-1. Enable GitHub Pages for all terraform_module repos (✅ automated via repos.tf)
-2. Deploy docs.yml workflow to all modules (✅ automated)
-3. Create baseline docs/index.md and mkdocs.yml where missing (✅ automated)
-4. Deploy release.yml workflow to all modules (automate GitHub Release creation)
-5. Create GitHub Project to track documentation completion
-6. For each module:
-   - Update README.md with badges and structure
-   - Create comprehensive GitHub Pages documentation
-   - Add missing repository files (SECURITY.md, CONTRIBUTING.md, etc.)
-   - Set up proper GitHub repository settings
-   - Ensure working examples exist
-   - Verify release automation works
