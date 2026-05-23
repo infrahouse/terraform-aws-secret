@@ -27,8 +27,12 @@ help: install-hooks
 install-hooks:  ## Install repo hooks
 	@echo "Checking and installing hooks"
 	@test -d .git/hooks || (echo "Looks like you are not in a Git repo" ; exit 1)
-	@test -L .git/hooks/pre-commit || ln -fs ../../hooks/pre-commit .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
+	@test -f hooks/pre-commit && \
+		printf '#!/bin/sh\nexec bash hooks/pre-commit\n' > .git/hooks/pre-commit && \
+		chmod +x .git/hooks/pre-commit || true
+	@test -f hooks/commit-msg && \
+		printf '#!/bin/sh\nexec bash hooks/commit-msg "$$@"\n' > .git/hooks/commit-msg && \
+		chmod +x .git/hooks/commit-msg || true
 
 
 .PHONY: test
