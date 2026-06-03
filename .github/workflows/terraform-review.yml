@@ -6,16 +6,23 @@
 name: Terraform Module Review
 
 on:  # yamllint disable-line rule:truthy
-  pull_request:
-    paths-ignore:
-      - '.github/workflows/**'
+  issue_comment:
+    types: [created]
 
 concurrency:
-  group: terraform-review-${{ github.event.pull_request.number }}
+  group: terraform-review-${{ github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
   review:
+    if: >-
+      github.event.issue.pull_request
+      && github.event.comment.body == '/review'
+      && (
+        github.event.comment.author_association == 'OWNER'
+        || github.event.comment.author_association == 'MEMBER'
+        || github.event.comment.author_association == 'COLLABORATOR'
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -23,10 +30,24 @@ jobs:
       pull-requests: write
 
     steps:
+      - name: Get PR head ref
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('base_ref', pr.base.ref);
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for proper diff
+          ref: ${{ steps.pr.outputs.head_ref }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,7 +64,6 @@ jobs:
           script: |
             const fs = require('fs');
 
-            // Find existing comment with review
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -55,14 +75,15 @@ jobs:
             );
 
             if (botComment) {
-              // Extract review content (remove header and marker)
               const body = botComment.body;
-              const reviewStart = body.indexOf('\n\n') + 2; // Skip "## 🤖 Terraform Module Review\n\n"
+              const reviewStart = body.indexOf('\n\n') + 2;
               const reviewEnd = body.lastIndexOf('\n\n<!-- terraform-review-bot -->');
               const reviewContent = body.substring(reviewStart, reviewEnd);
 
-              // Save to file
-              fs.writeFileSync('.claude/previous-review/terraform-module-review.md', reviewContent);
+              fs.writeFileSync(
+                '.claude/previous-review/terraform-module-review.md',
+                reviewContent
+              );
               console.log('Previous review extracted from PR comment');
               return { has_previous: true };
             } else {
@@ -84,9 +105,8 @@ jobs:
       - name: Get PR diff
         id: diff
         run: |
-          # Get the diff between base and head
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-          git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > pr-changes.diff
+          git fetch origin ${{ steps.pr.outputs.base_ref }}
+          git diff origin/${{ steps.pr.outputs.base_ref }}...HEAD > pr-changes.diff
           echo "Changes in this PR:"
           cat pr-changes.diff
 
@@ -156,7 +176,7 @@ jobs:
           path: claude-output.json
 
       - name: Post Review as PR Comment
-        if: steps.check_review.outputs.exists == 'true' && github.event_name == 'pull_request'
+        if: steps.check_review.outputs.exists == 'true'
         uses: actions/github-script@v7
         with:
           script: |
