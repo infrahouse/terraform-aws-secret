@@ -1,0 +1,1 @@
+- [Stand your ground](feedback_stand_ground.md) — Defend decisions with reasoning; never blindly revert on pushback

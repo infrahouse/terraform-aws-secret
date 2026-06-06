@@ -65,6 +65,19 @@ variable "service_name" {
   default     = "unknown"
 }
 
+variable "kms_key_id" {
+  description = <<-EOT
+    ARN or ID of a customer-managed KMS key to encrypt the secret.
+    When null (default), the module auto-creates a CMK if cross-account
+    role ARNs are detected in admins/readers/writers; otherwise it uses
+    the AWS-managed key (aws/secretsmanager).
+    Set this explicitly to use your own CMK for compliance requirements
+    or custom key policy control.
+  EOT
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Tags to apply to secret and other resources the module creates."
   type        = map(string)

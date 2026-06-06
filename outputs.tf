@@ -19,6 +19,14 @@ output "secret_id" {
   value       = aws_secretsmanager_secret.secret.id
 }
 
+output "kms_key_id" {
+  description = <<-EOT
+    The KMS key used to encrypt the secret.
+    Null when using the default AWS-managed key.
+  EOT
+  value       = aws_secretsmanager_secret.secret.kms_key_id
+}
+
 output "secret_value" {
   description = "The current secret value. If the value isn't set yet, return `null`."
   # External data source converts null to empty string, so we convert back to null

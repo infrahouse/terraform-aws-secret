@@ -18,6 +18,13 @@ TERRAFORM_ROOT_DIR = "test_data"
 setup_logging(LOG, debug_botocore=False)
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "manual: cross-account test, run by hand only (excluded from CI)",
+    )
+
+
 def get_secretsmanager_client_by_role(role_name, boto3_session, region):
     sts_client = boto3_session.client("sts", region_name=region)
     response = sts_client.assume_role(
