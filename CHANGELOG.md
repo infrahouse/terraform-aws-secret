@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-06-06
+
+### Bug Fixes
+
+- Use conventional commit message in release target
+- Use conventional commit message in bumpversion config
+
+### Documentation
+
+- Fix coding standard violations and improve documentation
+- Fix coding standard violations and improve documentation
+
+### Features
+
+- Improve secret_value output and add module validations
+- Auto-create CMK for cross-account secret access
+
+### Miscellaneous Tasks
+
+- Bump pytest-infrahouse to ~= 0.24 and reformat tests
+
+### Styling
+
+- Add trailing newlines to docs files
+
+### Ci
+
+- Add checkov config and dependency
+
 ## [1.1.1] - 2025-11-15
 
 ### Bug Fixes
