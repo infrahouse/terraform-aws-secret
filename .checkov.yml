@@ -1,0 +1,11 @@
+framework:
+  - terraform
+
+skip-check:
+  # Admin roles intentionally get full ("*") access to the secret
+  - CKV_AWS_1
+  - CKV_AWS_49
+  # Secret rotation is not always applicable (static API keys, etc.)
+  - CKV2_AWS_57
+  # InfraHouse uses version pinning, not commit hashes
+  - CKV_TF_1
