@@ -7,3 +7,6 @@ matplotlib ~= 3.10
 mkdocs-material ~= 9.7
 mkdocs-minify-plugin ~= 0.8
 mkdocs-glightbox ~= 0.4
+
+# Security checks
+checkov ~= 3.2
