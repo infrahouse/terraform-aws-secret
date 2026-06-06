@@ -35,15 +35,11 @@ def _assume_role_session(boto3_session, role_arn, region):
 def test_module_cmk(keep_after, test_role_arn, aws_region, boto3_session):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret_cmk")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
             region            = "{aws_region}"
             role_arn          = "{test_role_arn}"
             consumer_role_arn = "{CONSUMER_ROLE_ARN}"
-        """
-            )
-        )
+        """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(

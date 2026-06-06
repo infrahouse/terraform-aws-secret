@@ -33,8 +33,7 @@ def init_terraform_tf(terraform_dir, aws_provider_version="~> 5.11"):
             pass
 
     # Update terraform.tf with the specified AWS provider version
-    terraform_tf_content = dedent(
-        f"""
+    terraform_tf_content = dedent(f"""
         terraform {{
           required_providers {{
             aws = {{
@@ -43,8 +42,7 @@ def init_terraform_tf(terraform_dir, aws_provider_version="~> 5.11"):
             }}
           }}
         }}
-        """
-    )
+        """)
 
     with open(osp.join(terraform_dir, "terraform.tf"), "w") as fp:
         fp.write(terraform_tf_content)
@@ -65,18 +63,14 @@ def test_module(
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
                 admins = [
                     "{probe_role_arn}{probe_role_suffix}"
                 ]
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir, aws_provider_version)
 
     with terraform_apply(
@@ -93,18 +87,14 @@ def test_module_no_access(
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
                 admins = [
                     "{test_role_arn}"
                 ]
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(
@@ -146,9 +136,7 @@ def test_module_reads(
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
@@ -158,9 +146,7 @@ def test_module_reads(
                 readers = [
                     "{probe_role_arn}{probe_role_suffix}"
                 ]
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(
@@ -202,9 +188,7 @@ def test_module_writes(
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
@@ -214,9 +198,7 @@ def test_module_writes(
                 writers = [
                     "{probe_role_arn}{probe_role_suffix}"
                 ]
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(
@@ -262,9 +244,7 @@ def test_module_secret_value(
     probe_role_arn = probe_role["role_arn"]["value"]
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
                 admins = []
@@ -273,9 +253,7 @@ def test_module_secret_value(
                     "{probe_role_arn}"
                 ]
                 secret_value = "generate"
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(
@@ -328,9 +306,7 @@ def test_module_external_value(
     probe_role_arn = probe_role["role_arn"]["value"]
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
                 admins = []
@@ -339,9 +315,7 @@ def test_module_external_value(
                     "{probe_role_arn}"
                 ]
                 secret_value = null
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
     # Ensure destroy
     with terraform_apply(
@@ -395,18 +369,14 @@ def test_module_external_value(
 def test_module_name_prefix(keep_after, test_role_arn, aws_region):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
                 secret_name = null
                 secret_name_prefix = "some_secret"
 
                 admins = []
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(
@@ -423,17 +393,13 @@ def test_module_tags(
 ):
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
                 tags = {{
                     tag1: "value1"
                 }}
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(
@@ -495,9 +461,7 @@ def test_module_null_secret_value_output(
     probe_role_arn = probe_role["role_arn"]["value"]
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
                 admins = []
@@ -506,9 +470,7 @@ def test_module_null_secret_value_output(
                     "{probe_role_arn}"
                 ]
                 secret_value = null
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     # First apply: secret_value output should be None when no AWSCURRENT exists
@@ -558,9 +520,7 @@ def test_module_duplicate_role(
     terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret")
     probe_role_arn = probe_role["role_arn"]["value"]
     with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
+        fp.write(dedent(f"""
                 region = "{aws_region}"
                 role_arn = "{test_role_arn}"
 
@@ -573,9 +533,7 @@ def test_module_duplicate_role(
                 readers = [
                     "{probe_role_arn}"
                 ]
-                """
-            )
-        )
+                """))
     init_terraform_tf(terraform_module_dir)
 
     with terraform_apply(
