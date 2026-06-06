@@ -138,7 +138,9 @@ pip install boto3
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_cross_account_key"></a> [cross\_account\_key](#module\_cross\_account\_key) | registry.infrahouse.com/infrahouse/key/aws | 0.3.0 |
 
 ## Resources
 
@@ -160,6 +162,7 @@ No modules.
 |------|-------------|------|---------|:--------:|
 | <a name="input_admins"></a> [admins](#input\_admins) | List of role ARNs that will have all permissions of the secret. | `list(string)` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Name of environment. | `string` | n/a | yes |
+| <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | ARN or ID of a customer-managed KMS key to encrypt the secret.<br/>When null (default), the module auto-creates a CMK if cross-account<br/>role ARNs are detected in admins/readers/writers; otherwise it uses<br/>the AWS-managed key (aws/secretsmanager).<br/>Set this explicitly to use your own CMK for compliance requirements<br/>or custom key policy control. | `string` | `null` | no |
 | <a name="input_owner"></a> [owner](#input\_owner) | A tag owner with this value will be placed on a secret. | `string` | `null` | no |
 | <a name="input_readers"></a> [readers](#input\_readers) | List of role ARNs that will have read permissions of the secret. | `list(string)` | `null` | no |
 | <a name="input_secret_description"></a> [secret\_description](#input\_secret\_description) | The secret description in AWS Secretsmanager. | `string` | n/a | yes |
@@ -174,6 +177,7 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_kms_key_id"></a> [kms\_key\_id](#output\_kms\_key\_id) | The KMS key used to encrypt the secret.<br/>Null when using the default AWS-managed key. |
 | <a name="output_secret_arn"></a> [secret\_arn](#output\_secret\_arn) | ARN of the created secret |
 | <a name="output_secret_id"></a> [secret\_id](#output\_secret\_id) | ID of the created secret |
 | <a name="output_secret_name"></a> [secret\_name](#output\_secret\_name) | Name of the created secret |

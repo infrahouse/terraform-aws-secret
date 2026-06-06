@@ -30,9 +30,17 @@ install-hooks:  ## Install repo hooks
 
 
 .PHONY: test
-test:  ## Run tests on the module
+test:  ## Run CI tests (excludes manual cross-account tests)
 	rm -f test_data/test_module/.terraform.lock.hcl
-	pytest -xvvs --test-role-arn "arn:aws:iam::303467602807:role/secret-tester" tests/
+	pytest -xvvs -m "not manual" --test-role-arn "arn:aws:iam::303467602807:role/secret-tester" tests/
+
+.PHONY: test-cmk
+test-cmk:  ## Run the manual cross-account CMK test (needs secret-consumer in 493370826424)
+	pytest -xvvs -m manual \
+		--aws-region=${TEST_REGION} \
+		--test-role-arn=${TEST_ROLE} \
+		tests/test_module_cmk.py \
+		2>&1 | tee pytest-`date +%Y%m%d-%H%M%S`-output.log
 
 .PHONY: test-keep
 test-keep:  ## Run a test and keep resources (use TEST_PATH and TEST_FILTER to specify tests)

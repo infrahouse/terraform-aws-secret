@@ -137,6 +137,30 @@ resource "aws_ecs_task_definition" "worker" {
 }
 ```
 
+## Cross-Account Access
+
+Share a secret with a role in another AWS account. The module auto-creates a
+CMK when it detects cross-account role ARNs.
+See the [Cross-Account Access](cross-account.md) guide for a full walkthrough.
+
+```hcl
+module "shared_secret" {
+  source  = "registry.infrahouse.com/infrahouse/secret/aws"
+  version = "1.1.1"
+
+  secret_name        = "cross-account-config"
+  secret_description = "Configuration shared with another account"
+  secret_value       = "super-secret-value"
+  environment        = "production"
+  service_name       = "shared-secret"
+
+  writers = ["arn:aws:iam::222222222222:role/secret-consumer"]
+}
+```
+
+The consumer account also needs an identity policy on its role — see
+[Cross-Account Access](cross-account.md) for the full setup.
+
 ## Multiple Secrets with Prefix
 
 Create multiple related secrets using name prefix:

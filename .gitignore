@@ -39,5 +39,6 @@ __pycache__
 
 .claude/reviews
 .claude/*.local.json
+.claude/plans/*.local.md
 
 pytest-*-output.log

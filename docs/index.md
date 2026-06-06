@@ -17,6 +17,8 @@ This module simplifies the creation and management of AWS Secrets Manager secret
 - **Wildcard support** - Use wildcards in role ARNs for dynamic matching (e.g., SSO roles)
 - **Placeholder workflow** - Create secrets without values, set them later externally
 - **Automatic tagging** - Environment, service, owner, and module version tags
+- **Customer-managed KMS keys** - Encrypt with your own CMK for cross-account access and compliance
+- **Cross-account access** - Share secrets with roles in other AWS accounts
 - **AWS Provider v5 & v6 support** - Compatible with both provider versions
 
 ## Quick Start
@@ -46,4 +48,5 @@ module "api_secret" {
 - [Getting Started](getting-started.md) - Prerequisites and first deployment
 - [Configuration](configuration.md) - All variables explained
 - [Examples](examples.md) - Common use cases
+- [Cross-Account Access](cross-account.md) - Share secrets across AWS accounts
 - [Architecture](architecture.md) - How it works

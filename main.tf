@@ -18,6 +18,7 @@ resource "aws_secretsmanager_secret" "secret" {
   description             = var.secret_description
   name                    = var.secret_name
   name_prefix             = var.secret_name_prefix
+  kms_key_id              = local.effective_kms_key_id
   recovery_window_in_days = 0
   policy                  = data.aws_iam_policy_document.permission-policy.json
   tags = merge(

@@ -1,4 +1,4 @@
-infrahouse-core ~= 0.17
+infrahouse-core ~= 1.1
 pytest-infrahouse ~= 0.13
 
 # Documentation dependencies
