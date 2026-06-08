@@ -12,7 +12,7 @@ Cross-account secret access requires three things to be true simultaneously:
 1. **Resource policy** on the secret allows the consumer role (handled by this module
    when you add the consumer role ARN to `writers` or `readers`).
 2. **KMS key policy** on a customer-managed key (CMK) allows the consumer role to
-   decrypt. The module auto-creates this CMK when it detects cross-account role ARNs.
+   decrypt. The module creates this CMK when you set `create_cross_account_cmk = true`.
 3. **Identity policy** on the consumer role in the consumer account grants
    `secretsmanager:GetSecretValue` and `kms:Decrypt` scoped to the owner account's
    resources.
@@ -28,14 +28,14 @@ Throughout the examples below:
 
 ## Owner Account Setup
 
-The owner account (`111111111111`) creates the secret. Just add the consumer role
-ARN to `writers` (or `readers`) — the module detects that the role belongs to a
-different account and auto-creates a CMK with the right key policy:
+The owner account (`111111111111`) creates the secret. Add the consumer role ARN to
+`writers` (or `readers`) and set `create_cross_account_cmk = true` so the module
+provisions a CMK with the right key policy:
 
 ```hcl
 module "shared_secret" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.1.1"
+  version = "1.3.0"
 
   secret_name        = "cross-account-config"
   secret_description = "Configuration shared with the consumer account"
@@ -43,20 +43,63 @@ module "shared_secret" {
   environment        = "production"
   service_name       = "shared-secret"
 
-  writers = ["arn:aws:iam::222222222222:role/secret-consumer"]
+  writers                  = ["arn:aws:iam::222222222222:role/secret-consumer"]
+  create_cross_account_cmk = true
 }
 ```
 
-That's it. The module:
+That's it. With `create_cross_account_cmk = true`, the module:
 
-- Detects that `222222222222` is not the current account
-- Creates a CMK with a key policy granting the consumer role `kms:Decrypt`
-  and `kms:GenerateDataKey*`
+- Creates a CMK with a key policy granting any consumer role in `writers`/`readers`
+  (i.e. ARNs whose account differs from the owner account) `kms:Decrypt` and
+  `kms:GenerateDataKey*`
 - Encrypts the secret with that CMK
 - Generates a resource policy granting the consumer role read/write access
 
+> **Why isn't this auto-detected?** Earlier versions inferred cross-account access by
+> reading the account ID out of each role ARN. That breaks when an ARN is computed in
+> the same apply (e.g. an instance role created alongside the secret): the value is
+> unknown at plan time, so Terraform can't decide whether to create the key and fails
+> with `Invalid count argument`. The explicit flag avoids that entirely. See
+> [issue #49](https://github.com/infrahouse/terraform-aws-secret/issues/49).
+
 The CMK ARN is available via `module.shared_secret.kms_key_id` — the consumer
 account needs it for scoping its identity policy.
+
+!!! warning "The consumer role must exist before you apply the owner side"
+    When `create_cross_account_cmk = true`, the module writes the consumer role
+    ARNs into the **CMK key policy**. AWS KMS validates every principal named in a
+    key policy and rejects ARNs that don't yet exist, so the owner-side apply fails
+    with:
+
+    ```
+    MalformedPolicyDocumentException: Policy contains a statement with
+    one or more invalid principals.
+    ```
+
+    This is a KMS-specific rule — see
+    [PutKeyPolicy](https://docs.aws.amazon.com/kms/latest/APIReference/API_PutKeyPolicy.html).
+    The secret's **resource policy** is *not* affected: it matches the consumer with
+    an `ArnLike` condition on `aws:PrincipalArn`, which is evaluated per request and
+    never requires the role to exist at apply time.
+
+    The practical consequence is an ordering dependency between the two accounts:
+
+    1. The **consumer** account creates the IAM role first and hands over its ARN.
+    2. The **owner** account adds that ARN to `writers`/`readers`, sets
+       `create_cross_account_cmk = true`, and applies.
+
+    If the consumer role is later deleted, subsequent owner-side applies keep failing
+    the same way until the role is recreated or removed from `writers`/`readers`.
+
+!!! note "Grant specific roles, never `:root`"
+    Add the individual consumer role ARNs to `writers`/`readers` rather than the
+    account root (`arn:aws:iam::222222222222:root`). The module scopes both the
+    resource policy and the CMK key policy to exactly those ARNs, following least
+    privilege — this protects the consumer account from a misconfiguration where an
+    unexpected identity in that account gains access to the secret. Granting `:root`
+    would also sidestep the existence check above, but at the cost of exposing the
+    secret to every principal in the consumer account.
 
 !!! note "Bring your own CMK"
     If you need custom key policy settings, create a CMK separately and pass
@@ -205,10 +248,19 @@ Check the resource policy on the secret:
 aws secretsmanager get-resource-policy --secret-id <secret-arn>
 ```
 
+### MalformedPolicyDocumentException: invalid principals (owner-side apply)
+
+The owner-side apply fails while creating or updating the CMK because a consumer
+role ARN in `writers`/`readers` does not exist. KMS refuses to save a key policy
+that names a non-existent principal. Make sure every consumer role exists before
+you apply, then re-run. The secret's resource policy is unaffected because it
+matches `aws:PrincipalArn` with `ArnLike` rather than naming the principal
+directly. See [The consumer role must exist before you apply](#owner-account-setup).
+
 ### KMS AccessDeniedException
 
-The CMK key policy doesn't include the consumer role. If using the
-auto-created CMK, check the key policy:
+The CMK key policy doesn't include the consumer role. Check the key policy on the
+module-created CMK:
 
 ```bash
 aws kms get-key-policy --key-id <key-arn> --policy-name default

@@ -139,8 +139,8 @@ resource "aws_ecs_task_definition" "worker" {
 
 ## Cross-Account Access
 
-Share a secret with a role in another AWS account. The module auto-creates a
-CMK when it detects cross-account role ARNs.
+Share a secret with a role in another AWS account. Set `create_cross_account_cmk = true`
+so the module creates a CMK the consumer role can use to decrypt.
 See the [Cross-Account Access](cross-account.md) guide for a full walkthrough.
 
 ```hcl
@@ -154,7 +154,8 @@ module "shared_secret" {
   environment        = "production"
   service_name       = "shared-secret"
 
-  writers = ["arn:aws:iam::222222222222:role/secret-consumer"]
+  writers                  = ["arn:aws:iam::222222222222:role/secret-consumer"]
+  create_cross_account_cmk = true
 }
 ```
 

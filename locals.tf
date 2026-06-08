@@ -65,18 +65,6 @@ locals {
     ) : var.readers
   ) : null
 
-  all_role_arns = concat(
-    var.admins == null ? [] : var.admins,
-    var.readers == null ? [] : var.readers,
-    var.writers == null ? [] : var.writers,
-  )
-
-  cross_account_arns = [
-    for arn in local.all_role_arns : arn
-    if can(split(":", arn)[4]) &&
-    split(":", arn)[4] != data.aws_caller_identity.current.account_id
-  ]
-
   cross_account_writers = [
     for arn in concat(
       var.admins == null ? [] : var.admins,
@@ -93,7 +81,14 @@ locals {
     !contains(local.cross_account_writers, arn)
   ]
 
-  create_cmk = length(local.cross_account_arns) > 0 && var.kms_key_id == null
+  # Whether to create a customer-managed KMS key for cross-account access.
+  # This MUST be plan-time-known because it gates module.cross_account_key's count, so
+  # it comes from an explicit flag rather than inspecting role ARNs. Reading the account
+  # ID out of an ARN (split(":", arn)[4]) yields an unknown value when any reader/writer
+  # ARN is computed in the same apply (e.g. an instance role created alongside the
+  # secret), which made count unknown and broke `terraform apply` (#49).
+  # An explicit kms_key_id always wins.
+  create_cmk = var.kms_key_id == null && var.create_cross_account_cmk
 
   effective_kms_key_id = local.create_cmk ? module.cross_account_key[0].kms_key_arn : var.kms_key_id
 }
