@@ -514,6 +514,37 @@ def test_module_null_secret_value_output(
             )
 
 
+def test_module_computed_reader_arn(keep_after, test_role_arn, aws_region):
+    """
+    Regression test for #49.
+
+    A reader ARN that is computed in the same apply (here, an IAM role created
+    alongside the secret) is unknown at plan time. The module must still plan and
+    apply successfully and fall back to the AWS-managed key, instead of failing with
+    "Invalid count argument" on module.cross_account_key.
+    """
+    terraform_module_dir = osp.join(TERRAFORM_ROOT_DIR, "secret_computed_arn")
+    with open(osp.join(terraform_module_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(dedent(f"""
+                region = "{aws_region}"
+                role_arn = "{test_role_arn}"
+                """))
+    init_terraform_tf(terraform_module_dir)
+
+    # Entering the context manager means `terraform apply` succeeded, which is the
+    # behavior #49 broke.
+    with terraform_apply(
+        terraform_module_dir,
+        destroy_after=not keep_after,
+        json_output=True,
+    ) as tf_output:
+        LOG.info("%s", json.dumps(tf_output, indent=4))
+        assert tf_output["secret_arn"]["value"]
+        # No CMK was created: the secret uses the AWS-managed key, so kms_key_id is
+        # null (Terraform omits null outputs from json output entirely).
+        assert not tf_output.get("kms_key_id", {}).get("value")
+
+
 def test_module_duplicate_role(
     probe_role, keep_after, test_role_arn, aws_region, boto3_session
 ):

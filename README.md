@@ -132,9 +132,9 @@ pip install boto3
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.11, < 7.0 |
-| <a name="provider_external"></a> [external](#provider\_external) | n/a |
-| <a name="provider_null"></a> [null](#provider\_null) | ~> 3.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.49.0 |
+| <a name="provider_external"></a> [external](#provider\_external) | 2.4.0 |
+| <a name="provider_null"></a> [null](#provider\_null) | 3.3.0 |
 
 ## Modules
 
@@ -161,8 +161,9 @@ pip install boto3
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_admins"></a> [admins](#input\_admins) | List of role ARNs that will have all permissions of the secret. | `list(string)` | `null` | no |
+| <a name="input_create_cross_account_cmk"></a> [create\_cross\_account\_cmk](#input\_create\_cross\_account\_cmk) | Whether to create a customer-managed KMS key for cross-account secret access.<br/>Defaults to false: the secret uses the AWS-managed key (aws/secretsmanager),<br/>matching pre-1.2.0 behavior. Set to true when readers/writers live in another<br/>AWS account and need to decrypt the secret, since the AWS-managed key cannot be<br/>shared cross-account.<br/><br/>Note: this is an explicit flag rather than auto-detection because deciding it<br/>from role ARN account IDs requires those ARNs to be known at plan time. When an<br/>ARN is computed in the same apply (e.g. an instance role created alongside the<br/>secret), auto-detection produced an unknown value and broke `terraform apply`<br/>with "Invalid count argument" (#49).<br/><br/>Ignored when kms\_key\_id is set. | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Name of environment. | `string` | n/a | yes |
-| <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | ARN or ID of a customer-managed KMS key to encrypt the secret.<br/>When null (default), the module auto-creates a CMK if cross-account<br/>role ARNs are detected in admins/readers/writers; otherwise it uses<br/>the AWS-managed key (aws/secretsmanager).<br/>Set this explicitly to use your own CMK for compliance requirements<br/>or custom key policy control. | `string` | `null` | no |
+| <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | ARN or ID of a customer-managed KMS key to encrypt the secret.<br/>When null (default), the secret uses the AWS-managed key<br/>(aws/secretsmanager), unless create\_cross\_account\_cmk is true, in which<br/>case the module creates a CMK for cross-account access.<br/>Set this explicitly to use your own CMK for compliance requirements<br/>or custom key policy control. Takes precedence over<br/>create\_cross\_account\_cmk. | `string` | `null` | no |
 | <a name="input_owner"></a> [owner](#input\_owner) | A tag owner with this value will be placed on a secret. | `string` | `null` | no |
 | <a name="input_readers"></a> [readers](#input\_readers) | List of role ARNs that will have read permissions of the secret. | `list(string)` | `null` | no |
 | <a name="input_secret_description"></a> [secret\_description](#input\_secret\_description) | The secret description in AWS Secretsmanager. | `string` | n/a | yes |

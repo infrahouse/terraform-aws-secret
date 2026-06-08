@@ -68,14 +68,35 @@ variable "service_name" {
 variable "kms_key_id" {
   description = <<-EOT
     ARN or ID of a customer-managed KMS key to encrypt the secret.
-    When null (default), the module auto-creates a CMK if cross-account
-    role ARNs are detected in admins/readers/writers; otherwise it uses
-    the AWS-managed key (aws/secretsmanager).
+    When null (default), the secret uses the AWS-managed key
+    (aws/secretsmanager), unless create_cross_account_cmk is true, in which
+    case the module creates a CMK for cross-account access.
     Set this explicitly to use your own CMK for compliance requirements
-    or custom key policy control.
+    or custom key policy control. Takes precedence over
+    create_cross_account_cmk.
   EOT
   type        = string
   default     = null
+}
+
+variable "create_cross_account_cmk" {
+  description = <<-EOT
+    Whether to create a customer-managed KMS key for cross-account secret access.
+    Defaults to false: the secret uses the AWS-managed key (aws/secretsmanager),
+    matching pre-1.2.0 behavior. Set to true when readers/writers live in another
+    AWS account and need to decrypt the secret, since the AWS-managed key cannot be
+    shared cross-account.
+
+    Note: this is an explicit flag rather than auto-detection because deciding it
+    from role ARN account IDs requires those ARNs to be known at plan time. When an
+    ARN is computed in the same apply (e.g. an instance role created alongside the
+    secret), auto-detection produced an unknown value and broke `terraform apply`
+    with "Invalid count argument" (#49).
+
+    Ignored when kms_key_id is set.
+  EOT
+  type        = bool
+  default     = false
 }
 
 variable "tags" {
