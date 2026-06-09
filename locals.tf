@@ -1,5 +1,5 @@
 locals {
-  module_version = "1.2.0"
+  module_version = "1.3.0"
 
   secret_identifier = coalesce(var.secret_name, var.secret_name_prefix)
 

@@ -38,7 +38,7 @@ See the [Implementing Compliant Secrets with AWS Secrets Manager](https://infrah
 ```hcl
 module "secret" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
   
   secret_description = "API token to some service."
   secret_name        = "API_KEY"
@@ -69,7 +69,7 @@ When you know the secret value at deployment time (e.g., generated passwords, AP
 ```hcl
 module "database_password" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "database-password"
   secret_description = "PostgreSQL database password"
@@ -87,7 +87,7 @@ When the secret value comes from an external source (e.g., third-party API keys,
 ```hcl
 module "external_api_key" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "pypi-api-token"
   secret_description = "PyPI API token for package publishing"

@@ -41,7 +41,7 @@ provider "aws" {
 ```hcl
 module "my_secret" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "my-first-secret"
   secret_description = "My first secret managed by Terraform"

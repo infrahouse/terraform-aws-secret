@@ -26,7 +26,7 @@ This module simplifies the creation and management of AWS Secrets Manager secret
 ```hcl
 module "api_secret" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "my-api-key"
   secret_description = "API key for external service"

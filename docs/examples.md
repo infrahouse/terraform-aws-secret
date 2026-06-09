@@ -14,7 +14,7 @@ resource "random_password" "db" {
 
 module "db_password" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "postgres-password"
   secret_description = "PostgreSQL database password"
@@ -38,7 +38,7 @@ Create a secret for an API key that will be set manually:
 ```hcl
 module "stripe_api_key" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "stripe-api-key"
   secret_description = "Stripe API key for payment processing"
@@ -82,7 +82,7 @@ Grant access to AWS SSO roles using wildcards:
 ```hcl
 module "app_secret" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "app-config"
   secret_description = "Application configuration secrets"
@@ -107,7 +107,7 @@ not the task role:
 ```hcl
 module "api_token" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "external-api-token"
   secret_description = "Token for external API"
@@ -146,7 +146,7 @@ See the [Cross-Account Access](cross-account.md) guide for a full walkthrough.
 ```hcl
 module "shared_secret" {
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name        = "cross-account-config"
   secret_description = "Configuration shared with another account"
@@ -171,7 +171,7 @@ module "service_secrets" {
   for_each = toset(["api-key", "db-password", "jwt-secret"])
 
   source  = "registry.infrahouse.com/infrahouse/secret/aws"
-  version = "1.2.0"
+  version = "1.3.0"
 
   secret_name_prefix = "myservice-${each.key}-"
   secret_description = "Secret: ${each.key}"
