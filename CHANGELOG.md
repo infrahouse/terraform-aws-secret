@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-06-09
+
+### Bug Fixes
+
+- Make cross-account CMK explicit opt-in ([#49](https://github.com/infrahouse/terraform-aws-secret/issues/49))
+
 ## [1.2.0] - 2026-06-06
 
 ### Bug Fixes
