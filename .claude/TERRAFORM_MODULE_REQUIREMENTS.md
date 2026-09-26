@@ -109,8 +109,11 @@ plugins:
     ):
     ```
   - Makefile targets: `test-keep`/`test-clean` (for development), `test` (for CI)
-- Pre-commit hooks (terraform fmt, terraform-docs, tflint)
-- `make bootstrap` must install pre-commit hooks (via `install-hooks` dependency)
+- Git hooks in `hooks/`, managed by github-control:
+  - `hooks/pre-commit` runs terraform fmt, terraform-docs and a trailing newline check
+  - `hooks/commit-msg` enforces conventional commit messages
+- `make bootstrap` must install the git hooks (via `install-hooks` dependency, see `Makefile-example`)
+- Do not use the pre-commit framework: no `.pre-commit-config.yaml`, no `pre-commit install`
 - Automated CI/CD with terraform validate and plan
 - Security scanning (OSV, checkov, tfsec)
 
