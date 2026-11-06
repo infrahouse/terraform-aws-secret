@@ -54,7 +54,9 @@ settings:
   hide-empty: false
   html: true
   indent: 2
-  lockfile: true
+  # The Providers table shows the version constraints from terraform.tf. With lockfile: true, a local
+  # .terraform.lock.hcl, left by terraform init, would put the versions it resolved there instead.
+  lockfile: false
   read-comments: true
   required: true
   sensitive: true
