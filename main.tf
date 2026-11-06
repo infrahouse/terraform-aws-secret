@@ -37,4 +37,12 @@ resource "aws_secretsmanager_secret_version" "current" {
   version_stages = [
     var.secret_value == null ? "INITIAL" : "AWSCURRENT"
   ]
+
+  # Once someone sets a value externally, AWS makes a new AWSCURRENT version and
+  # tags this one AWSPREVIOUS, so the stages drift from the config and never
+  # settle. Changing secret_value replaces the version, so the INITIAL ->
+  # AWSCURRENT switch still works.
+  lifecycle {
+    ignore_changes = [version_stages]
+  }
 }
